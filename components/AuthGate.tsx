@@ -4,7 +4,7 @@ import { authService } from "../services/authService";
 import App from "../App";
 import { motion, AnimatePresence } from "framer-motion";
 import { GammaCard, GammaButton, GammaInput, gradients } from "./ui/GammaDesignSystem";
-import { Lock, Mail, ShieldCheck, ArrowRight, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { Lock, Mail, ShieldCheck, ArrowRight, CheckCircle2, AlertCircle, Sparkles, KeyRound } from "lucide-react";
 
 type AuthView = "LOGIN" | "SIGNUP" | "VERIFY" | "FORGOT_REQUEST" | "FORGOT_CONFIRM";
 
@@ -146,36 +146,47 @@ export const AuthGate: React.FC = () => {
 
               {/* Fields based on View */}
               {(view === "LOGIN" || view === "SIGNUP" || view === "FORGOT_REQUEST") && (
-                <GammaInput
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoFocus
-                />
+                <div className="relative">
+                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                   <GammaInput
+                     type="email"
+                     placeholder="name@example.com"
+                     value={email}
+                     onChange={(e) => setEmail(e.target.value)}
+                     className="pl-12"
+                     required
+                     autoFocus
+                   />
+                </div>
               )}
 
               {(view === "LOGIN" || view === "SIGNUP" || view === "FORGOT_CONFIRM") && (
-                <GammaInput
-                  type="password"
-                  placeholder={view === "FORGOT_CONFIRM" ? "Nouveau mot de passe" : "Mot de passe"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                   <GammaInput
+                     type="password"
+                     placeholder={view === "FORGOT_CONFIRM" ? "Nouveau mot de passe" : "Mot de passe"}
+                     value={password}
+                     onChange={(e) => setPassword(e.target.value)}
+                     className="pl-12"
+                     required
+                   />
+                </div>
               )}
 
               {(view === "VERIFY" || view === "FORGOT_CONFIRM") && (
-                <GammaInput
-                  type="text"
-                  placeholder="Code à 6 chiffres"
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value)}
-                  className="text-center tracking-[0.5em] font-mono text-lg"
-                  maxLength={6}
-                  required
-                />
+                <div className="relative">
+                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                  <GammaInput
+                    type="text"
+                    placeholder="Code à 6 chiffres"
+                    value={verificationCode}
+                    onChange={(e) => setVerificationCode(e.target.value)}
+                    className="pl-12 text-center tracking-[0.5em] font-mono text-lg"
+                    maxLength={6}
+                    required
+                  />
+                </div>
               )}
 
               <GammaButton

@@ -25,17 +25,19 @@ export const categorizeBookmarks = async (bookmarks: Bookmark[]): Promise<Bookma
   const ai = new GoogleGenAI({ apiKey });
   const model = "gemini-2.5-flash"; 
 
-  // Réduction drastique de la taille du lot pour éviter le 429 (Quota Exceeded)
-  // Le plan gratuit autorise un nombre limité de requêtes par minute (RPM)
-  const batchSize = 5;
+  // Configuration anti-429 (Rate Limiting)
+  // Le plan gratuit est souvent limité à ~15 RPM (Requêtes par minute).
+  // Batch size petit + délai important entre les appels.
+  const batchSize = 3;
   const categorizedBookmarks = [...bookmarks];
 
   for (let i = 0; i < bookmarks.length; i += batchSize) {
     const batch = bookmarks.slice(i, i + batchSize);
 
-    // Pause obligatoire entre les lots pour respecter le Rate Limit
+    // Pause préventive entre les lots
+    // 4000ms garantit qu'on ne dépasse pas ~15 RPM même si la réponse est rapide.
     if (i > 0) {
-        await delay(2000); // 2 secondes de pause
+        await delay(4000); 
     }
 
     const prompt = `
@@ -55,43 +57,68 @@ export const categorizeBookmarks = async (bookmarks: Bookmark[]): Promise<Bookma
       ${JSON.stringify(batch.map(b => ({ id: b.id, title: b.title, url: b.url })))}
     `;
 
-    try {
-      const result = await ai.models.generateContent({
-        model,
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json"
-        }
-      });
+    let retryCount = 0;
+    const maxRetries = 3;
+    let success = false;
 
-      const responseText = result.text;
-      if (responseText) {
-        const json = JSON.parse(responseText);
-        if (json.results && Array.isArray(json.results)) {
-          json.results.forEach((res: { id: string; category: string }) => {
-            const index = categorizedBookmarks.findIndex(b => b.id === res.id);
-            if (index !== -1 && AVAILABLE_CATEGORIES.includes(res.category)) {
-              categorizedBookmarks[index] = {
-                ...categorizedBookmarks[index],
-                category: res.category
-              };
-            }
-          });
+    while (!success && retryCount < maxRetries) {
+      try {
+        const result = await ai.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json"
+          }
+        });
+
+        const responseText = result.text;
+        if (responseText) {
+          const json = JSON.parse(responseText);
+          if (json.results && Array.isArray(json.results)) {
+            json.results.forEach((res: { id: string; category: string }) => {
+              const index = categorizedBookmarks.findIndex(b => b.id === res.id);
+              if (index !== -1 && AVAILABLE_CATEGORIES.includes(res.category)) {
+                categorizedBookmarks[index] = {
+                  ...categorizedBookmarks[index],
+                  category: res.category
+                };
+              }
+            });
+          }
         }
-      }
-    } catch (e: any) {
-      console.error("Erreur IA classification batch", e);
-      
-      // Gestion spécifique du 429 : On arrête proprement pour ne pas perdre ce qui est déjà fait
-      if (e.message && (e.message.includes("429") || e.message.includes("RESOURCE_EXHAUSTED"))) {
-          console.warn("Quota API atteint (429). Arrêt de la classification pour l'instant.");
-          break; // On sort de la boucle et on renvoie ce qu'on a déjà classé
+        success = true;
+
+      } catch (e: any) {
+        retryCount++;
+        const isQuotaError = e.message && (e.message.includes("429") || e.message.includes("RESOURCE_EXHAUSTED"));
+        
+        console.warn(`Erreur batch ${i} (tentative ${retryCount}/${maxRetries})`, e);
+
+        if (isQuotaError) {
+          if (retryCount < maxRetries) {
+            // Backoff exponentiel : 10s, 20s...
+            const waitTime = 10000 * retryCount;
+            console.warn(`Quota atteint (429). Pause de ${waitTime/1000}s avant retry...`);
+            await delay(waitTime);
+          } else {
+            console.error("Abandon du batch après plusieurs échecs de quota.");
+            // Si on échoue trop souvent sur le quota, on arrête tout le processus pour ne pas bloquer l'UI indéfiniment
+            return finalize(categorizedBookmarks);
+          }
+        } else {
+          // Autres erreurs (réseau, parsing) : petite pause et retry
+          if (retryCount < maxRetries) await delay(2000);
+        }
       }
     }
   }
 
-  // Assigner _A VOIR pour les non classés (ceux qui restaient ou si l'API a échoué)
-  return categorizedBookmarks.map(b => {
+  return finalize(categorizedBookmarks);
+};
+
+// Helper pour finaliser le tableau (mettre _A VOIR par défaut)
+const finalize = (bookmarks: Bookmark[]) => {
+  return bookmarks.map(b => {
     if (!b.category) {
       return { ...b, folderPath: ["_A VOIR", ...b.folderPath] };
     }

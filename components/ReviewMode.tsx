@@ -35,7 +35,7 @@ export const ReviewMode: React.FC<ReviewModeProps> = ({ bookmarks, onKeep, onDel
        <div className="bg-white rounded-xl shadow-2xl overflow-hidden border border-slate-200">
           <div className="relative h-64 bg-slate-100">
              <img 
-               src={getThumbnailUrl(current.url)} 
+               src={getThumbnailUrl(current.url).url} 
                alt={current.title} 
                className="w-full h-full object-cover"
              />
