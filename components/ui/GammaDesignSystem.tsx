@@ -1,35 +1,46 @@
 import React from "react";
 import { motion, HTMLMotionProps } from "framer-motion";
 
-// --- Colors & Gradients ---
-export const gradients = {
-  primary: "bg-gradient-to-r from-violet-600 to-indigo-600",
-  text: "bg-clip-text text-transparent bg-gradient-to-r from-violet-700 to-indigo-700",
-  surface: "bg-white/80 backdrop-blur-md",
-  subtle: "bg-slate-50/50",
+// --- Colors & Gradients (Chartre Gamma) ---
+export const colors = {
+  bg: "#F5F6F8",
+  white: "#FFFFFF",
+  textMain: "#1A1A1A",
+  textMuted: "#6C6E73",
+  accent: "#3A7BFF", // Azure Blue
+  mint: "#4BE2B0",
+  purple: "#7B5CFA",
 };
 
-// --- Category Colors (Gamma Palette) ---
+export const gradients = {
+  primary: "bg-[#3A7BFF]", // Aplat Azure (Gamma style préfère les aplats ou gradients très subtils)
+  primaryHover: "bg-[#2563EB]", 
+  text: "text-[#1A1A1A]", // Noir pur ou presque
+  surface: "bg-white",
+  subtle: "bg-[#F5F6F8]",
+};
+
+// --- Category Colors (Gamma Palette - Pastels avec accents) ---
 export const getCategoryColor = (category: string | null) => {
   const map: Record<string, string> = {
-    "Développement & Tech": "bg-blue-50 text-blue-700 border-blue-100",
-    "Design & UX": "bg-pink-50 text-pink-700 border-pink-100",
-    "Actualités & Média": "bg-slate-100 text-slate-700 border-slate-200",
-    "Commerce & Shopping": "bg-emerald-50 text-emerald-700 border-emerald-100",
-    "Finance & Business": "bg-amber-50 text-amber-700 border-amber-100",
-    "Éducation & Apprentissage": "bg-violet-50 text-violet-700 border-violet-100",
-    "Divertissement & Loisirs": "bg-orange-50 text-orange-700 border-orange-100",
-    "Outils & Productivité": "bg-indigo-50 text-indigo-700 border-indigo-100",
-    "Voyage & Lifestyle": "bg-teal-50 text-teal-700 border-teal-100",
-    "Autre": "bg-gray-50 text-gray-600 border-gray-100",
+    "Développement & Tech": "bg-blue-50 text-[#3A7BFF] border-blue-100",
+    "Design & UX": "bg-purple-50 text-[#7B5CFA] border-purple-100",
+    "Actualités & Média": "bg-gray-100 text-[#6C6E73] border-gray-200",
+    "Commerce & Shopping": "bg-emerald-50 text-[#4BE2B0] border-emerald-100",
+    "Finance & Business": "bg-amber-50 text-amber-600 border-amber-100",
+    "Éducation & Apprentissage": "bg-violet-50 text-violet-600 border-violet-100",
+    "Divertissement & Loisirs": "bg-orange-50 text-orange-600 border-orange-100",
+    "Outils & Productivité": "bg-indigo-50 text-indigo-600 border-indigo-100",
+    "Voyage & Lifestyle": "bg-teal-50 text-teal-600 border-teal-100",
+    "Autre": "bg-[#F5F6F8] text-[#6C6E73] border-gray-200",
   };
   return map[category || "Autre"] || map["Autre"];
 };
 
-// --- Animations ---
+// --- Animations (Douces, 200-300ms) ---
 export const fadeIn = {
-  hidden: { opacity: 0, y: 10 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" } },
+  hidden: { opacity: 0, y: 15 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] } }, // Cubic bezier doux
 };
 
 export const staggerContainer = {
@@ -37,7 +48,8 @@ export const staggerContainer = {
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05,
+      staggerChildren: 0.08,
+      delayChildren: 0.1,
     },
   },
 };
@@ -54,9 +66,9 @@ export const GammaCard: React.FC<CardProps> = ({ children, className = "", noPad
   return (
     <motion.div
       variants={fadeIn}
-      className={`bg-white rounded-2xl border border-slate-100 shadow-lg shadow-slate-200/50 overflow-hidden ${noPadding ? "" : "p-6"} ${className}`}
-      whileHover={{ y: -4, shadow: "0 20px 30px -10px rgb(0 0 0 / 0.08)" }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
+      className={`bg-white rounded-[20px] gamma-shadow overflow-hidden border border-white/50 ${noPadding ? "" : "p-8"} ${className}`}
+      whileHover={{ y: -4, boxShadow: "0 12px 24px -4px rgba(0,0,0,0.06)" }}
+      transition={{ duration: 0.3, ease: "easeOut" }}
       {...props}
     >
       {children}
@@ -78,18 +90,18 @@ export const GammaButton: React.FC<ButtonProps> = ({
   className = "", 
   ...props 
 }) => {
-  const baseStyles = "relative px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95";
+  const baseStyles = "relative px-6 py-3 rounded-xl font-medium text-[15px] transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]";
   
+  // Style Gamma : Aplat couleur Azure pour primary, Blanc + Border pour secondary
   const variants = {
-    primary: "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md hover:shadow-lg hover:shadow-indigo-500/20",
-    secondary: "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm",
-    ghost: "text-slate-600 hover:bg-slate-100 hover:text-slate-900",
+    primary: "bg-[#3A7BFF] hover:bg-[#2563EB] text-white shadow-md shadow-blue-500/20",
+    secondary: "bg-white text-[#1A1A1A] border border-gray-200 hover:border-gray-300 hover:bg-[#F9FAFB] shadow-sm",
+    ghost: "text-[#6C6E73] hover:bg-[#F5F6F8] hover:text-[#1A1A1A]",
     danger: "bg-red-50 text-red-600 border border-red-100 hover:bg-red-100",
   };
 
   return (
     <motion.button
-      whileTap={{ scale: 0.98 }}
       className={`${baseStyles} ${variants[variant]} ${className}`}
       disabled={isLoading || props.disabled}
       {...props}
@@ -107,7 +119,7 @@ export const GammaInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttr
     <motion.div className="relative" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <input
         ref={ref}
-        className={`w-full bg-slate-50 border border-slate-200 text-slate-800 rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all placeholder:text-slate-400 ${props.className}`}
+        className={`w-full bg-white border border-gray-200 text-[#1A1A1A] rounded-xl px-4 py-3 outline-none focus:ring-2 focus:ring-[#3A7BFF]/20 focus:border-[#3A7BFF] transition-all placeholder:text-[#9CA3AF] shadow-sm ${props.className}`}
         {...props}
       />
     </motion.div>
@@ -115,16 +127,17 @@ export const GammaInput = React.forwardRef<HTMLInputElement, React.InputHTMLAttr
 });
 
 export const GammaBadge: React.FC<{ children: React.ReactNode; color?: "blue" | "green" | "red" | "yellow" | "slate" }> = ({ children, color = "slate" }) => {
+  // Badge style : Pastel background, saturated text, no border
   const colors = {
-    blue: "bg-blue-50 text-blue-700 border-blue-100",
-    green: "bg-emerald-50 text-emerald-700 border-emerald-100",
-    red: "bg-red-50 text-red-700 border-red-100",
-    yellow: "bg-amber-50 text-amber-700 border-amber-100",
-    slate: "bg-slate-100 text-slate-700 border-slate-200",
+    blue: "bg-blue-50 text-[#3A7BFF]",
+    green: "bg-emerald-50 text-[#4BE2B0]",
+    red: "bg-red-50 text-red-600",
+    yellow: "bg-amber-50 text-amber-600",
+    slate: "bg-[#F5F6F8] text-[#6C6E73]",
   };
 
   return (
-    <span className={`px-2.5 py-1 rounded-lg text-xs font-semibold border ${colors[color]}`}>
+    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${colors[color]}`}>
       {children}
     </span>
   );
@@ -141,18 +154,18 @@ export const GammaPill: React.FC<{
       onClick={onClick}
       layout
       className={`
-        px-4 py-1.5 rounded-full text-sm font-medium border transition-colors flex items-center gap-2
+        px-5 py-2 rounded-full text-sm font-medium border transition-all flex items-center gap-2
         ${active 
-          ? "bg-slate-800 text-white border-slate-800 shadow-md" 
-          : "bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50"
+          ? "bg-[#1A1A1A] text-white border-[#1A1A1A] shadow-md" 
+          : "bg-white text-[#6C6E73] border-gray-200 hover:border-gray-300 hover:text-[#1A1A1A]"
         }
       `}
-      whileHover={{ scale: 1.05 }}
-      whileTap={{ scale: 0.95 }}
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
     >
       {label}
       {count !== undefined && (
-        <span className={`text-xs px-1.5 py-0.5 rounded-full ${active ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500"}`}>
+        <span className={`text-xs px-1.5 py-0.5 rounded-full ${active ? "bg-white/20 text-white" : "bg-[#F5F6F8] text-[#6C6E73]"}`}>
           {count}
         </span>
       )}
@@ -161,13 +174,13 @@ export const GammaPill: React.FC<{
 };
 
 export const SectionTitle: React.FC<{ title: string; subtitle?: string; icon?: React.ReactNode }> = ({ title, subtitle, icon }) => (
-  <div className="mb-8">
+  <div className="mb-10">
     <motion.h2 
       initial={{ opacity: 0, x: -10 }} 
       animate={{ opacity: 1, x: 0 }} 
-      className="text-3xl font-bold text-slate-800 flex items-center gap-3"
+      className="text-[32px] font-bold text-[#1A1A1A] flex items-center gap-3 tracking-tight"
     >
-      {icon && <span className="text-indigo-600">{icon}</span>}
+      {icon && <span className="text-[#3A7BFF]">{icon}</span>}
       {title}
     </motion.h2>
     {subtitle && (
@@ -175,7 +188,7 @@ export const SectionTitle: React.FC<{ title: string; subtitle?: string; icon?: R
         initial={{ opacity: 0 }} 
         animate={{ opacity: 1 }} 
         transition={{ delay: 0.1 }}
-        className="text-slate-500 mt-2 text-lg max-w-2xl font-light"
+        className="text-[#6C6E73] mt-2 text-lg max-w-2xl font-normal leading-relaxed"
       >
         {subtitle}
       </motion.p>

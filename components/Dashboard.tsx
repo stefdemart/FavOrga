@@ -10,16 +10,17 @@ interface DashboardProps {
   importSession?: ImportSessionSummary;
 }
 
-const COLORS = ['#6366F1', '#EC4899', '#8B5CF6', '#10B981', '#F59E0B', '#3B82F6'];
+// Gamma Palette for Charts
+const COLORS = ['#3A7BFF', '#4BE2B0', '#7B5CFA', '#F59E0B', '#EC4899', '#6366F1'];
 
 // Helper pour icônes
 const BrowserIcon = ({ source, size = 20 }: { source: string, size?: number }) => {
   const className = "text-slate-600";
   switch(source) {
-    case 'chrome': return <Chrome size={size} className="text-blue-500" />;
+    case 'chrome': return <Chrome size={size} className="text-[#3A7BFF]" />;
     case 'firefox': return <Globe size={size} className="text-orange-500" />;
-    case 'safari': return <Compass size={size} className="text-blue-400" />;
-    case 'edge': return <AppWindow size={size} className="text-blue-700" />;
+    case 'safari': return <Compass size={size} className="text-[#3A7BFF]" />;
+    case 'edge': return <AppWindow size={size} className="text-sky-600" />;
     default: return <Globe size={size} className={className} />;
   }
 };
@@ -69,32 +70,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ bookmarks, importSession }
   const barData = Object.entries(typeData).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count).slice(0, 5);
 
   return (
-    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-8">
+    <motion.div variants={staggerContainer} initial="hidden" animate="visible" className="space-y-10">
       
       <SectionTitle title="Tableau de bord" subtitle="Vue d'ensemble de votre base de connaissances." />
 
       {/* --- Import Timeline (Gamma Storytelling) --- */}
       {importSession && (importSession.master || importSession.merges.length > 0) && (
-        <GammaCard className="bg-gradient-to-br from-slate-900 to-slate-800 text-white border-none relative overflow-hidden">
+        <GammaCard className="bg-gradient-to-r from-slate-900 to-slate-800 text-white border-none relative overflow-hidden">
           <div className="absolute top-0 right-0 p-12 opacity-5 pointer-events-none">
             <Layers size={200} />
           </div>
           
           <div className="relative z-10">
-            <h3 className="text-lg font-bold mb-6 flex items-center gap-2 text-indigo-200">
+            <h3 className="text-lg font-bold mb-8 flex items-center gap-2 text-indigo-200">
               <Activity size={20} /> Session d'Import Actuelle
             </h3>
             
-            <div className="flex flex-wrap items-center gap-6">
+            <div className="flex flex-wrap items-center gap-8">
               {/* Master Node */}
               {importSession.master ? (
-                <div className="flex items-center gap-4 bg-white/10 backdrop-blur-md p-4 rounded-2xl border border-white/10 min-w-[200px]">
-                  <div className="bg-white p-3 rounded-xl shadow-lg">
-                    <BrowserIcon source={importSession.master.source} size={28} />
+                <div className="flex items-center gap-5 bg-white/10 backdrop-blur-md p-5 rounded-2xl border border-white/10 min-w-[220px]">
+                  <div className="bg-white p-4 rounded-xl shadow-lg">
+                    <BrowserIcon source={importSession.master.source} size={32} />
                   </div>
                   <div>
-                    <div className="text-[10px] uppercase tracking-widest font-bold text-indigo-300">Master</div>
-                    <div className="text-2xl font-bold">{importSession.master.count}</div>
+                    <div className="text-[10px] uppercase tracking-widest font-bold text-indigo-300 mb-1">Master</div>
+                    <div className="text-3xl font-bold">{importSession.master.count}</div>
                   </div>
                 </div>
               ) : (
@@ -102,24 +103,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ bookmarks, importSession }
               )}
 
               {/* Connector */}
-              {importSession.merges.length > 0 && <ArrowRight className="text-slate-500" />}
+              {importSession.merges.length > 0 && <ArrowRight className="text-slate-500 opacity-50" />}
 
               {/* Merges Nodes */}
-              <div className="flex gap-3 overflow-x-auto pb-2">
+              <div className="flex gap-4 overflow-x-auto pb-2">
                 {importSession.merges.map((m, i) => (
                   <motion.div 
                     key={i}
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: i * 0.1 }}
-                    className="bg-emerald-500/10 border border-emerald-500/20 p-3 rounded-xl flex items-center gap-3 min-w-[140px]"
+                    className="bg-[#4BE2B0]/10 border border-[#4BE2B0]/20 p-4 rounded-xl flex items-center gap-3 min-w-[150px]"
                   >
-                     <div className="bg-white/90 p-1.5 rounded-lg">
-                        <BrowserIcon source={m.source} size={16} />
+                     <div className="bg-white/90 p-2 rounded-lg">
+                        <BrowserIcon source={m.source} size={18} />
                      </div>
                      <div>
-                        <div className="text-[10px] text-emerald-300 font-bold uppercase">Fusion</div>
-                        <div className="font-bold text-emerald-100">+{m.count}</div>
+                        <div className="text-[10px] text-[#4BE2B0] font-bold uppercase mb-0.5">Fusion</div>
+                        <div className="font-bold text-white text-lg">+{m.count}</div>
                      </div>
                   </motion.div>
                 ))}
@@ -130,44 +131,44 @@ export const Dashboard: React.FC<DashboardProps> = ({ bookmarks, importSession }
       )}
 
       {/* --- KPI Grid --- */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <GammaCard className="flex items-center justify-between group cursor-default">
-           <div>
-             <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Total Favoris</div>
-             <div className="text-4xl font-bold text-slate-800">{total}</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <GammaCard className="flex items-center justify-between group cursor-default" noPadding>
+           <div className="p-8">
+             <div className="text-[#6C6E73] text-xs font-bold uppercase tracking-wider mb-2">Total Favoris</div>
+             <div className="text-5xl font-bold text-[#1A1A1A]">{total}</div>
            </div>
-           <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-             <Database size={24} />
-           </div>
-        </GammaCard>
-
-        <GammaCard className="flex items-center justify-between group cursor-default">
-           <div>
-             <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Favoris</div>
-             <div className="text-4xl font-bold text-amber-500">{favorites}</div>
-           </div>
-           <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-             <Star fill="currentColor" size={24} />
+           <div className="w-20 h-full bg-[#3A7BFF]/5 flex items-center justify-center group-hover:bg-[#3A7BFF]/10 transition-colors">
+             <Database size={28} className="text-[#3A7BFF]" />
            </div>
         </GammaCard>
 
-        <GammaCard className="flex items-center justify-between group cursor-default">
-           <div>
-             <div className="text-slate-400 text-xs font-bold uppercase tracking-wider mb-1">Non Classés</div>
-             <div className="text-4xl font-bold text-rose-500">{uncategorized}</div>
+        <GammaCard className="flex items-center justify-between group cursor-default" noPadding>
+           <div className="p-8">
+             <div className="text-[#6C6E73] text-xs font-bold uppercase tracking-wider mb-2">Favoris</div>
+             <div className="text-5xl font-bold text-amber-500">{favorites}</div>
            </div>
-           <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-500 flex items-center justify-center group-hover:scale-110 transition-transform">
-             <Tag size={24} />
+           <div className="w-20 h-full bg-amber-50 flex items-center justify-center group-hover:bg-amber-100 transition-colors">
+             <Star fill="currentColor" size={28} className="text-amber-500" />
+           </div>
+        </GammaCard>
+
+        <GammaCard className="flex items-center justify-between group cursor-default" noPadding>
+           <div className="p-8">
+             <div className="text-[#6C6E73] text-xs font-bold uppercase tracking-wider mb-2">Non Classés</div>
+             <div className="text-5xl font-bold text-rose-500">{uncategorized}</div>
+           </div>
+           <div className="w-20 h-full bg-rose-50 flex items-center justify-center group-hover:bg-rose-100 transition-colors">
+             <Tag size={28} className="text-rose-500" />
            </div>
         </GammaCard>
       </div>
 
       {/* --- Charts Row --- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
         
         {/* Pie Chart: Themes */}
-        <GammaCard className="flex flex-col h-[400px]">
-          <h3 className="font-bold text-slate-700 mb-4">Répartition Thématique</h3>
+        <GammaCard className="flex flex-col h-[420px]">
+          <h3 className="font-bold text-[#1A1A1A] mb-6 text-xl">Répartition Thématique</h3>
           <div className="flex-1 min-h-0">
              <ResponsiveContainer width="100%" height="100%">
                <PieChart>
@@ -175,23 +176,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ bookmarks, importSession }
                    data={catData}
                    cx="50%"
                    cy="50%"
-                   innerRadius={60}
-                   outerRadius={100}
-                   paddingAngle={5}
+                   innerRadius={70}
+                   outerRadius={110}
+                   paddingAngle={4}
                    dataKey="count"
                    cornerRadius={6}
+                   stroke="none"
                  >
                    {catData.map((entry, index) => (
-                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
+                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                    ))}
                  </Pie>
                  <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
                </PieChart>
              </ResponsiveContainer>
           </div>
-          <div className="flex flex-wrap gap-2 justify-center mt-4">
+          <div className="flex flex-wrap gap-2 justify-center mt-6">
              {catData.map((c, i) => (
-               <div key={i} className="flex items-center gap-1.5 text-xs text-slate-500 bg-slate-50 px-2 py-1 rounded-lg">
+               <div key={i} className="flex items-center gap-2 text-xs text-[#6C6E73] bg-[#F5F6F8] px-3 py-1.5 rounded-full">
                   <div className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
                   {c.name}
                </div>
@@ -200,37 +202,37 @@ export const Dashboard: React.FC<DashboardProps> = ({ bookmarks, importSession }
         </GammaCard>
 
         {/* Bar Chart + Flags */}
-        <div className="space-y-6">
+        <div className="space-y-8">
            {/* Types */}
-           <GammaCard className="h-[200px] flex flex-col">
-              <h3 className="font-bold text-slate-700 mb-2">Types de Domaines</h3>
+           <GammaCard className="h-[220px] flex flex-col">
+              <h3 className="font-bold text-[#1A1A1A] mb-4 text-lg">Types de Domaines</h3>
               <div className="flex-1">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={barData} layout="vertical" margin={{ top: 0, right: 30, left: 20, bottom: 0 }}>
                      <XAxis type="number" hide />
-                     <Tooltip cursor={{fill: '#f1f5f9'}} contentStyle={{ borderRadius: '8px' }} />
-                     <Bar dataKey="count" fill="#8B5CF6" radius={[0, 4, 4, 0]} barSize={20} background={{ fill: '#f8fafc' }} />
+                     <Tooltip cursor={{fill: '#F5F6F8'}} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }} />
+                     <Bar dataKey="count" fill="#7B5CFA" radius={[0, 4, 4, 0]} barSize={24} background={{ fill: '#F5F6F8' }} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
            </GammaCard>
 
            {/* Country Cards (Gamma Style) */}
-           <div className="grid grid-cols-2 gap-4">
+           <div className="grid grid-cols-2 gap-6">
               {countryData.length > 0 ? countryData.map((c, i) => (
-                 <GammaCard key={i} className="flex items-center justify-between p-4" noPadding>
-                    <div className="p-4 flex items-center gap-3">
-                       <span className="text-2xl shadow-sm rounded bg-white px-1">
+                 <GammaCard key={i} className="flex items-center justify-between p-5" noPadding>
+                    <div className="p-5 flex items-center gap-4">
+                       <span className="text-3xl bg-[#F5F6F8] p-2 rounded-xl">
                          {c.name === 'FR' ? '🇫🇷' : c.name === 'US' ? '🇺🇸' : c.name === 'DE' ? '🇩🇪' : c.name === 'UK' ? '🇬🇧' : '🌍'}
                        </span>
                        <div>
-                          <div className="font-bold text-slate-800">.{c.name}</div>
-                          <div className="text-xs text-slate-400">{c.count} sites</div>
+                          <div className="font-bold text-[#1A1A1A] text-lg">.{c.name}</div>
+                          <div className="text-xs text-[#6C6E73] font-medium">{c.count} sites</div>
                        </div>
                     </div>
                  </GammaCard>
               )) : (
-                 <div className="col-span-2 text-center text-slate-400 text-sm py-8 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                 <div className="col-span-2 text-center text-[#6C6E73] text-sm py-8 bg-[#F5F6F8] rounded-2xl border border-dashed border-gray-200">
                     Pas assez de données géographiques
                  </div>
               )}

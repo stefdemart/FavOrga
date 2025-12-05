@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { BookmarkSource } from "../services/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { GammaCard, GammaButton, SectionTitle, gradients } from "./ui/GammaDesignSystem";
-import { Upload, FileUp, CheckCircle2, Loader2, Chrome, Compass, AppWindow, Globe, Disc, Shield, Rocket, Map, MoreHorizontal, ArrowRight, RefreshCcw } from "lucide-react";
+import { Upload, FileUp, CheckCircle2, Loader2, Chrome, Compass, AppWindow, Globe, Disc, Shield, Rocket, Map, MoreHorizontal, ArrowRight, RefreshCcw, Crown } from "lucide-react";
 
 interface ImportSectionProps {
   onImport: (file: File, source: BookmarkSource, mode: "master" | "merge") => Promise<void>;
@@ -173,8 +173,14 @@ export const ImportSection: React.FC<ImportSectionProps> = ({ onImport }) => {
                        <span className={`text-xs font-bold ${source === s.id ? 'text-slate-800' : 'text-slate-500'}`}>{s.label}</span>
                        
                        {source === s.id && (
-                          <motion.div layoutId="check" className="absolute top-2 right-2 text-indigo-500">
-                             <CheckCircle2 size={16} fill="currentColor" className="text-white" />
+                          <motion.div layoutId="check" className="absolute top-2 right-2">
+                             {mode === 'master' ? (
+                                <div className="bg-amber-100 text-amber-600 p-1 rounded-full shadow-sm" title="Master Browser">
+                                   <Crown size={14} fill="currentColor" />
+                                </div>
+                             ) : (
+                                <CheckCircle2 size={16} fill="currentColor" className="text-indigo-500 bg-white rounded-full" />
+                             )}
                           </motion.div>
                        )}
                     </motion.button>
@@ -208,8 +214,8 @@ export const ImportSection: React.FC<ImportSectionProps> = ({ onImport }) => {
                      onClick={() => setMode('master')} 
                      className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${mode === 'master' ? 'bg-white border-rose-200 shadow-md ring-1 ring-rose-100' : 'bg-transparent border-transparent hover:bg-white hover:border-slate-200'}`}
                    >
-                      <div className={`p-2 rounded-lg ${mode === 'master' ? 'bg-rose-100 text-rose-600' : 'bg-slate-200 text-slate-500'}`}>
-                         <Upload size={20} />
+                      <div className={`p-2 rounded-lg ${mode === 'master' ? 'bg-amber-100 text-amber-600' : 'bg-slate-200 text-slate-500'}`}>
+                         <Crown size={20} />
                       </div>
                       <div>
                          <div className={`font-bold text-sm ${mode === 'master' ? 'text-slate-800' : 'text-slate-500'}`}>Master Import</div>

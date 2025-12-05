@@ -4,7 +4,7 @@ import { authService } from "../services/authService";
 import App from "../App";
 import { motion, AnimatePresence } from "framer-motion";
 import { GammaCard, GammaButton, GammaInput, gradients } from "./ui/GammaDesignSystem";
-import { Lock, Mail, ShieldCheck, ArrowRight, CheckCircle2, AlertCircle, Sparkles, KeyRound } from "lucide-react";
+import { Lock, Mail, ShieldCheck, ArrowRight, CheckCircle2, AlertCircle, Sparkles, KeyRound, RotateCcw } from "lucide-react";
 
 type AuthView = "LOGIN" | "SIGNUP" | "VERIFY" | "FORGOT_REQUEST" | "FORGOT_CONFIRM";
 
@@ -38,8 +38,14 @@ export const AuthGate: React.FC = () => {
 
     try {
       if (view === "LOGIN") {
-        const authUser = await authService.signIn(email, password);
-        setUser(authUser);
+        try {
+          const authUser = await authService.signIn(email, password);
+          setUser(authUser);
+        } catch (err: any) {
+          // Si compte non vérifié, on propose de vérifier (via le catch général pour l'instant, 
+          // mais on pourrait rediriger automatiquement si l'erreur est spécifique)
+          throw err;
+        }
       } else if (view === "SIGNUP") {
         const result = await authService.signUp(email, password);
         if (result.requiresVerification) {
@@ -64,6 +70,20 @@ export const AuthGate: React.FC = () => {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur est survenue");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    if (!email) return;
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      const result = await authService.resendVerificationCode(email);
+      setDemoCode(result.demoCode);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erreur renvoi code");
     } finally {
       setIsSubmitting(false);
     }
@@ -175,17 +195,30 @@ export const AuthGate: React.FC = () => {
               )}
 
               {(view === "VERIFY" || view === "FORGOT_CONFIRM") && (
-                <div className="relative">
-                  <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
-                  <GammaInput
-                    type="text"
-                    placeholder="Code à 6 chiffres"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    className="pl-12 text-center tracking-[0.5em] font-mono text-lg"
-                    maxLength={6}
-                    required
-                  />
+                <div className="space-y-3">
+                  <div className="relative">
+                    <KeyRound className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+                    <GammaInput
+                      type="text"
+                      placeholder="Code à 6 chiffres"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
+                      className="pl-12 text-center tracking-[0.5em] font-mono text-lg"
+                      maxLength={6}
+                      required
+                    />
+                  </div>
+                  {view === "VERIFY" && (
+                    <div className="flex justify-end">
+                      <button 
+                        type="button"
+                        onClick={handleResendCode} 
+                        className="text-xs text-indigo-500 hover:text-indigo-700 font-medium flex items-center gap-1"
+                      >
+                         <RotateCcw size={12} /> Renvoyer le code
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 

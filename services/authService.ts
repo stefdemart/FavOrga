@@ -28,14 +28,38 @@ export const authService = {
 
     const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
     const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
-
-    if (users.find((u) => u.email === email)) {
-      throw new Error("Cet email est déjà utilisé.");
-    }
+    const existingUserIndex = users.findIndex((u) => u.email === email);
 
     const passwordHash = await hashPassword(password);
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-    
+
+    if (existingUserIndex !== -1) {
+      const existingUser = users[existingUserIndex];
+      // Si l'utilisateur existe et est déjà vérifié, erreur
+      if (existingUser.isVerified) {
+        throw new Error("Cet email est déjà utilisé.");
+      }
+      
+      // Si l'utilisateur existe mais N'EST PAS vérifié, on écrase (nouvelle tentative)
+      // On met à jour le mot de passe et le code
+      const updatedUser: StoredUser = {
+        ...existingUser,
+        passwordHash,
+        verificationCode,
+        createdAt: new Date().toISOString() // Reset date
+      };
+      
+      users[existingUserIndex] = updatedUser;
+      localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+
+      return { 
+        user: { id: updatedUser.id, email: updatedUser.email, createdAt: updatedUser.createdAt, isVerified: false },
+        requiresVerification: true,
+        demoCode: verificationCode
+      };
+    }
+
+    // Nouvel utilisateur
     const newUser: StoredUser = {
       id: crypto.randomUUID(),
       email,
@@ -53,6 +77,27 @@ export const authService = {
       requiresVerification: true,
       demoCode: verificationCode
     };
+  },
+
+  // 1.5 Renvoyer le code
+  async resendVerificationCode(email: string): Promise<{ demoCode: string }> {
+    await new Promise(r => setTimeout(r, 600));
+    const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
+    const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
+    
+    const userIndex = users.findIndex(u => u.email === email);
+    if (userIndex === -1) throw new Error("Utilisateur introuvable.");
+    
+    const user = users[userIndex];
+    if (user.isVerified) throw new Error("Compte déjà vérifié.");
+
+    // Générer un nouveau code
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    user.verificationCode = verificationCode;
+    users[userIndex] = user;
+    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+
+    return { demoCode: verificationCode };
   },
 
   // 2. Vérification Email

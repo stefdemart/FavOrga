@@ -7,17 +7,37 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+      :root {
+        --gamma-bg: #F5F6F8;
+        --gamma-text-main: #1A1A1A;
+        --gamma-text-muted: #6C6E73;
+        --gamma-accent: #3A7BFF;
+        --gamma-mint: #4BE2B0;
+        --gamma-purple: #7B5CFA;
+      }
       body { 
         font-family: 'Inter', sans-serif; 
-        background-color: #F8FAFC;
-        color: #1E293B;
+        background-color: var(--gamma-bg);
+        color: var(--gamma-text-main);
         -webkit-font-smoothing: antialiased;
       }
-      /* Custom scrollbar for Gamma feel */
-      ::-webkit-scrollbar { width: 8px; }
+      /* Custom scrollbar for Gamma feel - Thinner, lighter */
+      ::-webkit-scrollbar { width: 6px; }
       ::-webkit-scrollbar-track { background: transparent; }
-      ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
-      ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+      ::-webkit-scrollbar-thumb { background: #E2E4E9; border-radius: 10px; }
+      ::-webkit-scrollbar-thumb:hover { background: #CBD5E1; }
+      
+      .mask-fade-sides {
+        mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+      }
+      
+      /* Utilitaires Gamma Custom */
+      .gamma-shadow {
+        box-shadow: 0 4px 12px 0 rgba(0,0,0,0.04);
+      }
+      .gamma-shadow-hover {
+        box-shadow: 0 12px 24px -4px rgba(0,0,0,0.08);
+      }
     </style>
   <script type="importmap">
 {

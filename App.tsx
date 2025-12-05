@@ -26,7 +26,7 @@ interface AppProps {
 
 const App: React.FC<AppProps> = ({ user, onLogout }) => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  // Démarrer directement sur la vue IMPORT pour inciter à l'action immédiate
+  // Démarrer directement sur la vue IMPORT
   const [view, setView] = useState<AppView>(AppView.IMPORT);
   const [importSession, setImportSession] = useState<ImportSessionSummary>({ master: null, merges: [] });
   const [isSidebarOpen, setSidebarOpen] = useState(true);
@@ -58,7 +58,6 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
     }));
   };
 
-  // Réorganisation du menu : Import en premier
   const navItems = [
     { id: AppView.IMPORT, icon: Download, label: "Importer" },
     { sep: true },
@@ -73,20 +72,21 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#F8FAFC]">
+    // Background global Pearl Grey selon charte Gamma
+    <div className="flex min-h-screen bg-[#F5F6F8]">
       
-      {/* Sidebar */}
+      {/* Sidebar: Blanc Pur, border subtle */}
       <motion.aside 
         initial={{ width: 280 }}
         animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="bg-white border-r border-slate-200 sticky top-0 h-screen z-40 flex flex-col transition-all duration-300 shadow-xl shadow-slate-200/50"
+        className="bg-white border-r border-gray-100 sticky top-0 h-screen z-40 flex flex-col transition-all duration-300 shadow-sm"
       >
-        <div className="p-6 flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl ${gradients.primary} flex items-center justify-center shrink-0 shadow-lg shadow-indigo-500/30`}>
+        <div className="p-8 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#3A7BFF] flex items-center justify-center shrink-0 shadow-lg shadow-blue-500/20">
             <Sparkles className="text-white" size={20} />
           </div>
           {isSidebarOpen && (
-            <motion.span initial={{opacity:0}} animate={{opacity:1}} className="font-bold text-slate-800 tracking-tight text-lg">
+            <motion.span initial={{opacity:0}} animate={{opacity:1}} className="font-bold text-[#1A1A1A] tracking-tight text-lg">
               Bookmarks AI
             </motion.span>
           )}
@@ -94,27 +94,27 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
 
         <nav className="flex-1 px-4 py-4 space-y-1">
           {navItems.map((item, idx) => {
-            if (item.sep) return <div key={idx} className="my-4 border-t border-slate-100" />;
+            if (item.sep) return <div key={idx} className="my-6 border-t border-gray-100 mx-2" />;
             const Icon = item.icon as any;
             const active = view === item.id;
             return (
               <button
                 key={item.id || idx}
                 onClick={() => item.id && setView(item.id as AppView)}
-                className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group relative
-                  ${active ? "bg-slate-50 text-indigo-600 font-medium" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}
+                className={`w-full flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-200 group relative
+                  ${active ? "bg-[#F5F6F8] text-[#3A7BFF] font-medium" : "text-[#6C6E73] hover:bg-[#F5F6F8] hover:text-[#1A1A1A]"}
                 `}
               >
-                {active && <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-8 bg-indigo-600 rounded-r-full" />}
-                {Icon && <Icon size={20} className={active ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />}
+                {active && <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-6 bg-[#3A7BFF] rounded-r-full" />}
+                {Icon && <Icon size={20} className={active ? "text-[#3A7BFF]" : "text-gray-400 group-hover:text-gray-600"} />}
                 {isSidebarOpen && <span>{item.label}</span>}
               </button>
             )
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-100">
-           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 rounded-lg hover:bg-slate-100 text-slate-400">
+        <div className="p-4 border-t border-gray-100">
+           <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 transition-colors">
               <Menu size={20} />
            </button>
         </div>
@@ -122,27 +122,28 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
 
       {/* Main Content */}
       <main className="flex-1 min-w-0">
-        <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-8 py-4 flex items-center justify-between">
-           <h2 className="text-xl font-bold text-slate-800">{navItems.find(i => i.id === view)?.label}</h2>
+        <header className="sticky top-0 z-30 bg-[#F5F6F8]/80 backdrop-blur-xl px-12 py-6 flex items-center justify-between">
+           <h2 className="text-2xl font-bold text-[#1A1A1A]">{navItems.find(i => i.id === view)?.label}</h2>
            <div className="flex items-center gap-4">
               <AccountMenu user={user} bookmarks={bookmarks} onLogout={onLogout} onRestore={(b) => { setBookmarks(b); setView(AppView.DASHBOARD); }} />
            </div>
         </header>
 
-        <div className="p-8 max-w-7xl mx-auto">
+        {/* Spacing généreux (Padding 12 = 48px) */}
+        <div className="p-12 max-w-[1400px] mx-auto">
            <AnimatePresence mode="wait">
              <motion.div
                key={view}
-               initial={{ opacity: 0, y: 20 }}
+               initial={{ opacity: 0, y: 15 }}
                animate={{ opacity: 1, y: 0 }}
-               exit={{ opacity: 0, y: -20 }}
-               transition={{ duration: 0.3, ease: "easeOut" }}
+               exit={{ opacity: 0, y: -15 }}
+               transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
              >
                 {view === AppView.DASHBOARD && <Dashboard bookmarks={bookmarks} importSession={importSession} />}
                 {view === AppView.IMPORT && (
                   <>
                     <ImportSection onImport={handleImport} />
-                    {bookmarks.length > 0 && <div className="mt-12"><AiSorter bookmarks={bookmarks} onUpdateBookmarks={setBookmarks} /></div>}
+                    {bookmarks.length > 0 && <div className="mt-16"><AiSorter bookmarks={bookmarks} onUpdateBookmarks={setBookmarks} /></div>}
                   </>
                 )}
                 {view === AppView.VISUAL && <VisualGallery bookmarks={bookmarks} onDelete={handleDelete} onToggleFavorite={handleToggleFavorite} />}
@@ -154,7 +155,7 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
              
                 {/* Floating Export */}
                 {view !== AppView.IMPORT && bookmarks.length > 0 && view !== AppView.EXPORT && (
-                   <div className="mt-12 border-t pt-8">
+                   <div className="mt-20 border-t border-gray-200 pt-10">
                       <ExportMenu bookmarks={bookmarks} />
                    </div>
                 )}
