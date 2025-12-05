@@ -26,7 +26,7 @@ interface StoredUser {
 }
 
 export const authService = {
-  async signUp(email: string, password: string): Promise<{ user: AuthUser; requiresVerification: boolean }> {
+  async signUp(email: string, password: string): Promise<{ user: AuthUser; requiresVerification: boolean; demoCode?: string }> {
     const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
     const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
 
@@ -41,7 +41,6 @@ export const authService = {
     
     // Simulation envoi email
     console.log(`[SIMULATION EMAIL] Code de vérification pour ${email} : ${verificationCode}`);
-    alert(`[SIMULATION] Votre code de vérification est : ${verificationCode}`);
 
     const newUser: StoredUser = {
       id: crypto.randomUUID(),
@@ -57,7 +56,8 @@ export const authService = {
     
     return { 
       user: { id: newUser.id, email: newUser.email, createdAt: newUser.createdAt, isVerified: false },
-      requiresVerification: true 
+      requiresVerification: true,
+      demoCode: verificationCode // Renvoi du code pour affichage UI (Mode Démo)
     };
   },
 
@@ -122,4 +122,44 @@ export const authService = {
       return null;
     }
   },
+
+  // --- Password Reset ---
+
+  async requestPasswordReset(email: string): Promise<{ demoCode: string }> {
+    const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
+    const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
+    
+    const userIndex = users.findIndex(u => u.email === email);
+    if (userIndex === -1) {
+       throw new Error("Aucun compte associé à cet email.");
+    }
+
+    const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log(`[SIMULATION EMAIL] Code de reset pour ${email} : ${resetCode}`);
+
+    users[userIndex].verificationCode = resetCode; 
+    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+
+    return { demoCode: resetCode };
+  },
+
+  async confirmPasswordReset(email: string, code: string, newPassword: string): Promise<void> {
+    const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
+    const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
+    
+    const userIndex = users.findIndex(u => u.email === email);
+    if (userIndex === -1) throw new Error("Utilisateur introuvable.");
+    
+    const user = users[userIndex];
+    if (user.verificationCode !== code) {
+       throw new Error("Code de réinitialisation incorrect.");
+    }
+
+    const newHash = await hashPassword(newPassword);
+    user.passwordHash = newHash;
+    delete user.verificationCode;
+    
+    users[userIndex] = user;
+    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+  }
 };

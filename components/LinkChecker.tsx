@@ -31,8 +31,9 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ bookmarks, onUpdateSta
              generatorRef.current = null;
              break;
           }
-          onUpdateStatus(next.value);
-          setProgress(p => p + next.value.length);
+          const results = next.value as LinkCheckResult[];
+          onUpdateStatus(results);
+          setProgress(p => p + results.length);
        }
     } catch (e) {
        console.error(e);
