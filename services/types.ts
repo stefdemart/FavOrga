@@ -56,12 +56,25 @@ export interface AuthUser {
   id: string;
   email: string;
   createdAt: string;
+  isVerified: boolean; // Nouveau champ de sécurité
 }
 
-export type AuthStatus = "loading" | "unauthenticated" | "authenticated";
+export type AuthStatus = "loading" | "unauthenticated" | "authenticated" | "verification_pending";
 
 export interface CloudSnapshotMeta {
   id: string;
   createdAt: string;
   bookmarkCount: number;
+}
+
+// Import Visualization Types
+export interface ImportBatchInfo {
+  source: BookmarkSource;
+  count: number;
+  timestamp: number;
+}
+
+export interface ImportSessionSummary {
+  master: ImportBatchInfo | null;
+  merges: ImportBatchInfo[];
 }

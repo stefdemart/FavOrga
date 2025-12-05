@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Bookmark, BookmarkSource, AppView, LinkCheckResult, AuthUser } from "./services/types";
+import { Bookmark, BookmarkSource, AppView, LinkCheckResult, AuthUser, ImportSessionSummary } from "./services/types";
 import { parseBookmarks } from "./services/bookmarkParser";
 
 // Components
@@ -25,6 +25,12 @@ interface AppProps {
 const App: React.FC<AppProps> = ({ user, onLogout }) => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [view, setView] = useState<AppView>(AppView.DASHBOARD);
+  
+  // State pour visualiser l'historique de la session d'import
+  const [importSession, setImportSession] = useState<ImportSessionSummary>({
+     master: null,
+     merges: []
+  });
 
   // --- Handlers ---
 
@@ -32,18 +38,35 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
     const text = await file.text();
     const newBookmarks = parseBookmarks(text, source);
     
+    const count = newBookmarks.length;
+
     if (mode === "master") {
       setBookmarks(newBookmarks);
+      setImportSession({
+        master: { source, count, timestamp: Date.now() },
+        merges: []
+      });
     } else {
       // Merge: Avoid exact URL duplicates from new batch
       const existingUrls = new Set(bookmarks.map(b => b.url));
       const filteredNew = newBookmarks.filter(b => !existingUrls.has(b.url));
+      
       setBookmarks([...bookmarks, ...filteredNew]);
+      
+      setImportSession(prev => ({
+         ...prev,
+         merges: [...prev.merges, { source, count: filteredNew.length, timestamp: Date.now() }]
+      }));
     }
   };
 
   const handleRestore = (restoredBookmarks: Bookmark[]) => {
     setBookmarks(restoredBookmarks);
+    // On considère une restauration comme un Master
+    setImportSession({
+       master: { source: "other", count: restoredBookmarks.length, timestamp: Date.now() },
+       merges: []
+    });
     setView(AppView.DASHBOARD);
   };
 
@@ -84,13 +107,13 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
   );
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-100 flex flex-col font-sans">
       {/* Header */}
-      <header className="bg-white shadow-sm sticky top-0 z-50">
+      <header className="bg-white shadow-sm sticky top-0 z-50 border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-             <div className="bg-gradient-to-tr from-blue-600 to-indigo-600 w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold">B</div>
-             <span className="font-bold text-slate-800 text-lg hidden sm:block">Bookmarks Central AI</span>
+             <div className="bg-gradient-to-br from-blue-600 to-indigo-700 w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold shadow-md">B</div>
+             <span className="font-bold text-slate-800 text-lg hidden sm:block tracking-tight">Bookmarks Central AI</span>
           </div>
           
           <div className="flex items-center gap-4">
@@ -108,8 +131,8 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
       <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-6">
         
         {/* Navigation Toolbar */}
-        <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-xl shadow-sm overflow-x-auto">
-          <NavButton target={AppView.DASHBOARD} icon={LayoutDashboard} label="Dashboard" />
+        <div className="flex flex-wrap gap-2 mb-8 bg-white p-2 rounded-xl shadow-sm overflow-x-auto border border-slate-200">
+          <NavButton target={AppView.DASHBOARD} icon={LayoutDashboard} label="Tableau de bord" />
           <NavButton target={AppView.IMPORT} icon={Download} label="Importer" />
           <div className="w-px bg-slate-200 mx-2"></div>
           <NavButton target={AppView.VISUAL} icon={Grid} label="Galerie" />
@@ -123,10 +146,10 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
 
         {/* View Switcher */}
         <div className="animate-fade-in">
-          {view === AppView.DASHBOARD && <Dashboard bookmarks={bookmarks} />}
+          {view === AppView.DASHBOARD && <Dashboard bookmarks={bookmarks} importSession={importSession} />}
           
           {view === AppView.IMPORT && (
-            <div className="max-w-3xl mx-auto">
+            <div className="max-w-4xl mx-auto">
               <ImportSection onImport={handleImport} />
               <AiSorter bookmarks={bookmarks} onUpdateBookmarks={setBookmarks} />
             </div>
@@ -145,7 +168,7 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
           )}
 
           {view === AppView.LINK_CHECKER && (
-             <LinkChecker bookmarks={bookmarks} onUpdateStatus={handleUpdateStatus} />
+             <LinkChecker bookmarks={bookmarks} onUpdateStatus={handleUpdateStatus} onDelete={handleDelete} />
           )}
 
           {view === AppView.REVIEW && (
@@ -159,13 +182,13 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
 
         {/* Floating Export FAB (visible except on Import/Export view) */}
         {view !== AppView.IMPORT && bookmarks.length > 0 && (
-           <div className="fixed bottom-6 right-6">
+           <div className="fixed bottom-6 right-6 z-40">
              <button 
                onClick={() => setView(AppView.EXPORT)}
-               className="bg-slate-800 text-white p-4 rounded-full shadow-lg hover:bg-slate-700 transition-transform hover:scale-105"
+               className="bg-slate-800 text-white p-4 rounded-full shadow-lg hover:bg-slate-700 transition-transform hover:scale-110 flex items-center justify-center"
                title="Exporter"
              >
-               <Download />
+               <Download size={24} />
              </button>
            </div>
         )}

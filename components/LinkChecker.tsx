@@ -1,21 +1,21 @@
 import React, { useState, useRef } from "react";
 import { Bookmark, LinkCheckResult } from "../services/types";
 import { checkLinksInBatches } from "../services/linkCheckerService";
-import { Play, Pause, RotateCcw, Activity } from "lucide-react";
+import { Play, Pause, RotateCcw, Activity, Trash2, ExternalLink } from "lucide-react";
 
 interface LinkCheckerProps {
   bookmarks: Bookmark[];
   onUpdateStatus: (results: LinkCheckResult[]) => void;
+  onDelete: (id: string) => void; // Added delete capability
 }
 
-export const LinkChecker: React.FC<LinkCheckerProps> = ({ bookmarks, onUpdateStatus }) => {
+export const LinkChecker: React.FC<LinkCheckerProps> = ({ bookmarks, onUpdateStatus, onDelete }) => {
   const [isRunning, setIsRunning] = useState(false);
   const [progress, setProgress] = useState(0);
   const generatorRef = useRef<AsyncGenerator<LinkCheckResult[], void, unknown> | null>(null);
 
   const startCheck = async () => {
     setIsRunning(true);
-    // On ne check que ceux qui ne sont pas 'dead' ou 'suspect' pour économiser, ou tout si reset
     const toCheck = bookmarks.map(b => ({ id: b.id, url: b.url }));
     
     if (!generatorRef.current) {
@@ -23,11 +23,8 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ bookmarks, onUpdateSta
     }
 
     try {
-       // Loop manual control via recursion or internal loop would be better, but simplified here
-       // Note: To properly pause/resume an async generator loop, we need a wrapper
-       // Here we simply consume until done or paused.
        while(isRunning) {
-          if (!generatorRef.current) break; // Safety
+          if (!generatorRef.current) break; 
           const next = await generatorRef.current.next();
           if (next.done) {
              setIsRunning(false);
@@ -43,14 +40,11 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ bookmarks, onUpdateSta
     }
   };
   
-  // A bit hacky: simple loop for the demo to simulate "Pause/Resume" logic which is tricky with generators
-  // We will re-create the generator logic slightly to allow state-based interruption
-  
   const handleStart = async () => {
       if (isRunning) return;
       setIsRunning(true);
       
-      const toCheck = bookmarks.filter(b => b.linkStatus === 'unknown'); // Only check unknowns or resets
+      const toCheck = bookmarks.filter(b => b.linkStatus === 'unknown');
       if (toCheck.length === 0) {
           alert("Tout a déjà été vérifié ou réinitialisez les status.");
           setIsRunning(false);
@@ -62,18 +56,16 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ bookmarks, onUpdateSta
       for await (const batch of iterator) {
           onUpdateStatus(batch);
           setProgress(prev => prev + batch.length);
-          // Very rough pause mechanism: strictly speaking we can't 'pause' the `for await` easily from outside
-          // without an abort signal or state check inside.
-          // For this React implementation, we just let it run for the demo batch.
       }
       setIsRunning(false);
   };
 
   const handleReset = () => {
-      // Logic to reset would be passed up, but here we just reset local progress
       setProgress(0);
       setIsRunning(false);
   };
+
+  const suspects = bookmarks.filter(b => b.linkStatus === 'suspect' || b.linkStatus === 'dead');
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -94,13 +86,13 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ bookmarks, onUpdateSta
          {!isRunning ? (
             <button 
               onClick={handleStart}
-              className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded flex items-center gap-2"
+              className="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded flex items-center gap-2 shadow-sm"
             >
               <Play size={18} /> Lancer le test
             </button>
          ) : (
              <button 
-               className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded flex items-center gap-2 cursor-not-allowed opacity-75"
+               className="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded flex items-center gap-2 cursor-not-allowed opacity-75 shadow-sm"
              >
                <Pause size={18} /> En cours...
              </button>
@@ -108,23 +100,46 @@ export const LinkChecker: React.FC<LinkCheckerProps> = ({ bookmarks, onUpdateSta
          
          <button 
             onClick={handleReset}
-            className="border border-slate-300 hover:bg-slate-50 text-slate-700 py-2 px-4 rounded flex items-center gap-2"
+            className="border border-slate-300 hover:bg-slate-50 text-slate-700 py-2 px-4 rounded flex items-center gap-2 shadow-sm"
          >
             <RotateCcw size={18} /> Réinitialiser
          </button>
        </div>
 
-       <div className="space-y-2">
-          <h3 className="font-semibold text-slate-800">Résultats Suspects</h3>
-          {bookmarks.filter(b => b.linkStatus === 'suspect').length === 0 && (
-             <div className="text-slate-400 italic">Aucun lien suspect détecté pour le moment.</div>
-          )}
-          {bookmarks.filter(b => b.linkStatus === 'suspect').slice(0, 10).map(b => (
-             <div key={b.id} className="flex items-center justify-between bg-red-50 p-2 rounded border border-red-100">
-                <a href={b.url} target="_blank" className="text-red-700 hover:underline truncate max-w-lg">{b.url}</a>
-                <span className="text-xs text-red-500 font-bold">SUSPECT</span>
+       <div className="space-y-4">
+          <h3 className="font-semibold text-slate-800 border-b pb-2">
+            Résultats Suspects <span className="text-red-500">({suspects.length})</span>
+          </h3>
+          
+          {suspects.length === 0 && (
+             <div className="text-slate-400 italic py-4 text-center bg-slate-50 rounded">
+               Aucun lien suspect détecté pour le moment.
              </div>
-          ))}
+          )}
+
+          <div className="grid grid-cols-1 gap-2">
+            {suspects.map(b => (
+              <div key={b.id} className="flex items-center justify-between bg-white p-3 rounded border border-red-100 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex-1 min-w-0 mr-4">
+                    <div className="font-medium text-slate-800 truncate">{b.title}</div>
+                    <a href={b.url} target="_blank" className="text-xs text-blue-500 hover:underline truncate block flex items-center gap-1">
+                      {b.url} <ExternalLink size={10} />
+                    </a>
+                    <div className="text-xs text-red-500 font-bold mt-1">
+                       {b.linkStatus === 'dead' ? 'MORT (404/500)' : 'SUSPECT (Timeout/CORS)'} 
+                       {b.linkStatusMessage && <span className="font-normal text-slate-500"> - {b.linkStatusMessage}</span>}
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => onDelete(b.id)}
+                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                    title="Supprimer définitivement"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+              </div>
+            ))}
+          </div>
        </div>
     </div>
   );

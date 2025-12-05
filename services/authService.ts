@@ -21,10 +21,12 @@ interface StoredUser {
   email: string;
   passwordHash: string;
   createdAt: string;
+  isVerified: boolean;
+  verificationCode?: string; // Stocké temporairement pour le mock
 }
 
 export const authService = {
-  async signUp(email: string, password: string): Promise<AuthUser> {
+  async signUp(email: string, password: string): Promise<{ user: AuthUser; requiresVerification: boolean }> {
     const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
     const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
 
@@ -33,19 +35,54 @@ export const authService = {
     }
 
     const passwordHash = await hashPassword(password);
+    
+    // Génération d'un code à 6 chiffres
+    const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Simulation envoi email
+    console.log(`[SIMULATION EMAIL] Code de vérification pour ${email} : ${verificationCode}`);
+    alert(`[SIMULATION] Votre code de vérification est : ${verificationCode}`);
+
     const newUser: StoredUser = {
       id: crypto.randomUUID(),
       email,
       passwordHash,
       createdAt: new Date().toISOString(),
+      isVerified: false,
+      verificationCode
     };
 
     users.push(newUser);
     localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
     
-    // Auto login
-    const authUser: AuthUser = { id: newUser.id, email: newUser.email, createdAt: newUser.createdAt };
+    return { 
+      user: { id: newUser.id, email: newUser.email, createdAt: newUser.createdAt, isVerified: false },
+      requiresVerification: true 
+    };
+  },
+
+  async verifyEmail(email: string, code: string): Promise<AuthUser> {
+    const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
+    const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
+    
+    const userIndex = users.findIndex(u => u.email === email);
+    if (userIndex === -1) throw new Error("Utilisateur introuvable.");
+    
+    const user = users[userIndex];
+    if (user.verificationCode !== code) {
+       throw new Error("Code de vérification incorrect.");
+    }
+
+    // Valider l'utilisateur
+    user.isVerified = true;
+    delete user.verificationCode;
+    users[userIndex] = user;
+    localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
+
+    // Créer la session
+    const authUser: AuthUser = { id: user.id, email: user.email, createdAt: user.createdAt, isVerified: true };
     localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(authUser));
+    
     return authUser;
   },
 
@@ -62,8 +99,12 @@ export const authService = {
     if (inputHash !== user.passwordHash) {
       throw new Error("Identifiants invalides.");
     }
+    
+    if (!user.isVerified) {
+       throw new Error("Compte non vérifié. Veuillez vous réinscrire pour recevoir un nouveau code.");
+    }
 
-    const authUser: AuthUser = { id: user.id, email: user.email, createdAt: user.createdAt };
+    const authUser: AuthUser = { id: user.id, email: user.email, createdAt: user.createdAt, isVerified: true };
     localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(authUser));
     return authUser;
   },
