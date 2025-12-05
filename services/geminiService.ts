@@ -15,19 +15,29 @@ export const AVAILABLE_CATEGORIES = [
   "Autre"
 ];
 
+// Helper pour introduire un délai
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const categorizeBookmarks = async (bookmarks: Bookmark[]): Promise<Bookmark[]> => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) throw new Error("API Key manquante");
 
   const ai = new GoogleGenAI({ apiKey });
-  const model = "gemini-2.5-flash"; // Rapide et efficace pour de la classification
+  const model = "gemini-2.5-flash"; 
 
-  // On traite par lots de 20 pour ne pas saturer le contexte
-  const batchSize = 20;
+  // Réduction drastique de la taille du lot pour éviter le 429 (Quota Exceeded)
+  // Le plan gratuit autorise un nombre limité de requêtes par minute (RPM)
+  const batchSize = 5;
   const categorizedBookmarks = [...bookmarks];
 
   for (let i = 0; i < bookmarks.length; i += batchSize) {
     const batch = bookmarks.slice(i, i + batchSize);
+
+    // Pause obligatoire entre les lots pour respecter le Rate Limit
+    if (i > 0) {
+        await delay(2000); // 2 secondes de pause
+    }
+
     const prompt = `
       Tu es un assistant de classement de favoris.
       Voici une liste de favoris (Titre - URL).
@@ -69,12 +79,18 @@ export const categorizeBookmarks = async (bookmarks: Bookmark[]): Promise<Bookma
           });
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Erreur IA classification batch", e);
+      
+      // Gestion spécifique du 429 : On arrête proprement pour ne pas perdre ce qui est déjà fait
+      if (e.message && (e.message.includes("429") || e.message.includes("RESOURCE_EXHAUSTED"))) {
+          console.warn("Quota API atteint (429). Arrêt de la classification pour l'instant.");
+          break; // On sort de la boucle et on renvoie ce qu'on a déjà classé
+      }
     }
   }
 
-  // Assigner _A VOIR pour les non classés
+  // Assigner _A VOIR pour les non classés (ceux qui restaient ou si l'API a échoué)
   return categorizedBookmarks.map(b => {
     if (!b.category) {
       return { ...b, folderPath: ["_A VOIR", ...b.folderPath] };

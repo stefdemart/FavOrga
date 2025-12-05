@@ -1,13 +1,7 @@
 import { AuthUser } from "./types";
 
-/**
- * Service d'authentification (Mock sécurisé).
- * NOTE: En production, remplacez ceci par Supabase Auth, Firebase Auth, ou un backend OAuth.
- * Ce mock utilise Web Crypto pour hasher les mots de passe avant stockage localStorage.
- */
-
-const STORAGE_KEY_USERS = "bca_users_db";
-const STORAGE_KEY_SESSION = "bca_session";
+const STORAGE_KEY_USERS = "bca_users_v2_db";
+const STORAGE_KEY_SESSION = "bca_session_v2";
 
 async function hashPassword(password: string): Promise<string> {
   const msgBuffer = new TextEncoder().encode(password);
@@ -22,11 +16,16 @@ interface StoredUser {
   passwordHash: string;
   createdAt: string;
   isVerified: boolean;
-  verificationCode?: string; // Stocké temporairement pour le mock
+  verificationCode?: string;
+  resetCode?: string;
 }
 
 export const authService = {
+  // 1. Inscription
   async signUp(email: string, password: string): Promise<{ user: AuthUser; requiresVerification: boolean; demoCode?: string }> {
+    // Simuler latence réseau
+    await new Promise(r => setTimeout(r, 800));
+
     const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
     const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
 
@@ -35,13 +34,8 @@ export const authService = {
     }
 
     const passwordHash = await hashPassword(password);
-    
-    // Génération d'un code à 6 chiffres
     const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Simulation envoi email
-    console.log(`[SIMULATION EMAIL] Code de vérification pour ${email} : ${verificationCode}`);
-
     const newUser: StoredUser = {
       id: crypto.randomUUID(),
       email,
@@ -57,11 +51,14 @@ export const authService = {
     return { 
       user: { id: newUser.id, email: newUser.email, createdAt: newUser.createdAt, isVerified: false },
       requiresVerification: true,
-      demoCode: verificationCode // Renvoi du code pour affichage UI (Mode Démo)
+      demoCode: verificationCode
     };
   },
 
+  // 2. Vérification Email
   async verifyEmail(email: string, code: string): Promise<AuthUser> {
+    await new Promise(r => setTimeout(r, 600));
+
     const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
     const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
     
@@ -73,20 +70,21 @@ export const authService = {
        throw new Error("Code de vérification incorrect.");
     }
 
-    // Valider l'utilisateur
     user.isVerified = true;
     delete user.verificationCode;
     users[userIndex] = user;
     localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
 
-    // Créer la session
     const authUser: AuthUser = { id: user.id, email: user.email, createdAt: user.createdAt, isVerified: true };
     localStorage.setItem(STORAGE_KEY_SESSION, JSON.stringify(authUser));
     
     return authUser;
   },
 
+  // 3. Connexion
   async signIn(email: string, password: string): Promise<AuthUser> {
+    await new Promise(r => setTimeout(r, 800));
+
     const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
     const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
 
@@ -101,7 +99,8 @@ export const authService = {
     }
     
     if (!user.isVerified) {
-       throw new Error("Compte non vérifié. Veuillez vous réinscrire pour recevoir un nouveau code.");
+       // On pourrait renvoyer le code ici, mais pour la démo on demande de refaire signUp si perdu
+       throw new Error("Compte non vérifié. Veuillez valider votre email.");
     }
 
     const authUser: AuthUser = { id: user.id, email: user.email, createdAt: user.createdAt, isVerified: true };
@@ -109,10 +108,13 @@ export const authService = {
     return authUser;
   },
 
+  // 4. Logout
   async signOut(): Promise<void> {
+    await new Promise(r => setTimeout(r, 300));
     localStorage.removeItem(STORAGE_KEY_SESSION);
   },
 
+  // 5. Session Check
   async getCurrentUser(): Promise<AuthUser | null> {
     const session = localStorage.getItem(STORAGE_KEY_SESSION);
     if (!session) return null;
@@ -123,9 +125,9 @@ export const authService = {
     }
   },
 
-  // --- Password Reset ---
-
+  // 6. Reset Password Flow
   async requestPasswordReset(email: string): Promise<{ demoCode: string }> {
+    await new Promise(r => setTimeout(r, 600));
     const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
     const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
     
@@ -135,15 +137,14 @@ export const authService = {
     }
 
     const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log(`[SIMULATION EMAIL] Code de reset pour ${email} : ${resetCode}`);
-
-    users[userIndex].verificationCode = resetCode; 
+    users[userIndex].resetCode = resetCode; 
     localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));
 
     return { demoCode: resetCode };
   },
 
   async confirmPasswordReset(email: string, code: string, newPassword: string): Promise<void> {
+    await new Promise(r => setTimeout(r, 800));
     const usersRaw = localStorage.getItem(STORAGE_KEY_USERS);
     const users: StoredUser[] = usersRaw ? JSON.parse(usersRaw) : [];
     
@@ -151,13 +152,13 @@ export const authService = {
     if (userIndex === -1) throw new Error("Utilisateur introuvable.");
     
     const user = users[userIndex];
-    if (user.verificationCode !== code) {
+    if (user.resetCode !== code) {
        throw new Error("Code de réinitialisation incorrect.");
     }
 
     const newHash = await hashPassword(newPassword);
     user.passwordHash = newHash;
-    delete user.verificationCode;
+    delete user.resetCode;
     
     users[userIndex] = user;
     localStorage.setItem(STORAGE_KEY_USERS, JSON.stringify(users));

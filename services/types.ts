@@ -1,4 +1,4 @@
-export type BookmarkSource = "chrome" | "edge" | "firefox" | "safari" | "comet" | "atlas" | "other";
+export type BookmarkSource = "chrome" | "edge" | "firefox" | "safari" | "opera" | "brave" | "comet" | "atlas" | "other";
 
 export type LinkStatus = "unknown" | "ok" | "suspect" | "dead";
 
@@ -15,6 +15,7 @@ export interface Bookmark {
   linkStatus?: LinkStatus;
   linkStatusCode?: number | null;
   linkStatusMessage?: string | null;
+  countryCode?: string; // e.g. "fr", "us"
 }
 
 export enum AppView {
@@ -32,9 +33,8 @@ export enum AppView {
 export interface CategoryStats {
   name: string;
   count: number;
+  color?: string;
 }
-
-export type ThumbnailStatus = "idle" | "loading" | "loaded" | "error";
 
 export interface LinkCheckResult {
   id: string;
@@ -49,6 +49,7 @@ export interface SmartCollection {
   name: string;
   filterDescription: string;
   filterFn: (b: Bookmark) => boolean;
+  icon?: any;
 }
 
 // Security & Account Types
@@ -56,10 +57,8 @@ export interface AuthUser {
   id: string;
   email: string;
   createdAt: string;
-  isVerified: boolean; // Nouveau champ de sécurité
+  isVerified: boolean;
 }
-
-export type AuthStatus = "loading" | "unauthenticated" | "authenticated" | "verification_pending";
 
 export interface CloudSnapshotMeta {
   id: string;

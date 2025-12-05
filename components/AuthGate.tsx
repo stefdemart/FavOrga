@@ -2,7 +2,9 @@ import React, { useState, useEffect } from "react";
 import { AuthUser } from "../services/types";
 import { authService } from "../services/authService";
 import App from "../App";
-import { Lock, LogIn, UserPlus, ShieldCheck, Mail, Info, KeyRound, ArrowLeft } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { GammaCard, GammaButton, GammaInput, gradients } from "./ui/GammaDesignSystem";
+import { Lock, Mail, ShieldCheck, ArrowRight, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
 
 type AuthView = "LOGIN" | "SIGNUP" | "VERIFY" | "FORGOT_REQUEST" | "FORGOT_CONFIRM";
 
@@ -15,9 +17,9 @@ export const AuthGate: React.FC = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [verificationCode, setVerificationCode] = useState("");
-  const [demoCode, setDemoCode] = useState<string | null>(null); // Pour affichage UI
+  const [demoCode, setDemoCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     checkUser();
@@ -29,11 +31,10 @@ export const AuthGate: React.FC = () => {
     setLoading(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleAuthAction = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccessMsg(null);
-    setLoading(true);
+    setIsSubmitting(true);
 
     try {
       if (view === "LOGIN") {
@@ -56,7 +57,6 @@ export const AuthGate: React.FC = () => {
          setView("FORGOT_CONFIRM");
       } else if (view === "FORGOT_CONFIRM") {
          await authService.confirmPasswordReset(email, verificationCode, password);
-         setSuccessMsg("Mot de passe réinitialisé avec succès ! Connectez-vous.");
          setView("LOGIN");
          setPassword("");
          setVerificationCode("");
@@ -65,7 +65,7 @@ export const AuthGate: React.FC = () => {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Une erreur est survenue");
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -77,182 +77,142 @@ export const AuthGate: React.FC = () => {
     setPassword("");
     setVerificationCode("");
     setDemoCode(null);
-    setError(null);
-    setSuccessMsg(null);
   };
 
-  const resetForm = (newView: AuthView) => {
-      setView(newView);
-      setError(null);
-      setSuccessMsg(null);
-      setPassword("");
-      setVerificationCode("");
-      setDemoCode(null);
-  };
+  if (loading) return null; // Or a nice full-screen loader
 
-  if (loading && !user) {
-    return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center text-white">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  // Si utilisateur connecté, on rend l'application
   if (user) {
     return <App user={user} onLogout={handleLogout} />;
   }
 
-  // Sinon, écrans d'auth
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-slate-800 rounded-xl shadow-2xl p-8 border border-slate-700">
-        <div className="text-center mb-8">
-          <div className="mx-auto w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-blue-500/50">
-            {view === "VERIFY" || view === "FORGOT_CONFIRM" ? <ShieldCheck className="text-white w-8 h-8" /> : 
-             view.includes("FORGOT") ? <KeyRound className="text-white w-8 h-8" /> : 
-             <Lock className="text-white w-8 h-8" />}
-          </div>
-          <h1 className="text-2xl font-bold text-white">Bookmarks Central AI</h1>
-          <p className="text-slate-400 mt-2">Centralisez, nettoyez et sécurisez vos favoris.</p>
-        </div>
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 overflow-hidden relative">
+      {/* Background Decor */}
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-200/30 rounded-full blur-3xl" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-violet-200/30 rounded-full blur-3xl" />
+      </div>
 
-        {error && (
-          <div className="bg-red-500/10 border border-red-500 text-red-400 p-3 rounded mb-4 text-sm animate-pulse">
-            {error}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={view}
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -20, scale: 0.95 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="w-full max-w-md relative z-10"
+        >
+          <div className="text-center mb-8">
+            <div className={`mx-auto w-16 h-16 rounded-2xl ${gradients.primary} flex items-center justify-center mb-6 shadow-xl shadow-indigo-500/20`}>
+              <Sparkles className="text-white w-8 h-8" />
+            </div>
+            <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Bookmarks Central</h1>
+            <p className="text-slate-500 mt-2">Votre second cerveau numérique, organisé par IA.</p>
           </div>
-        )}
 
-        {successMsg && (
-          <div className="bg-green-500/10 border border-green-500 text-green-400 p-3 rounded mb-4 text-sm">
-            {successMsg}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {(view === "VERIFY" || view === "FORGOT_CONFIRM") && (
-             <div className="animate-fade-in-up">
-                
-                {/* Simulation de réception Email */}
-                {demoCode && (
-                  <div className="bg-yellow-500/10 border border-yellow-500/50 p-4 rounded mb-6 text-left relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-2 opacity-10">
-                       <Mail size={64} className="text-yellow-500" />
-                    </div>
-                    <div className="flex items-center gap-2 text-yellow-500 font-bold text-xs uppercase mb-1">
-                       <Info size={14} /> Simulation d'Email
-                    </div>
-                    <p className="text-yellow-200 text-sm leading-relaxed">
-                       Puisque ceci est une démo sans serveur SMTP, voici le code que vous auriez reçu par email :
-                    </p>
-                    <div className="mt-2 bg-slate-900/50 p-2 rounded text-center">
-                       <span className="text-2xl font-mono font-bold text-white tracking-widest select-all">{demoCode}</span>
-                    </div>
-                  </div>
+          <GammaCard className="backdrop-blur-xl bg-white/90">
+            <form onSubmit={handleAuthAction} className="space-y-5">
+              
+              {/* Error Message */}
+              <AnimatePresence>
+                {error && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-red-50 text-red-600 p-3 rounded-xl text-sm flex items-center gap-2"
+                  >
+                    <AlertCircle size={16} /> {error}
+                  </motion.div>
                 )}
+              </AnimatePresence>
 
-                <div className="text-blue-200 text-sm text-center mb-4 bg-blue-900/30 p-3 rounded">
-                   Code de {view === "VERIFY" ? "vérification" : "réinitialisation"} pour <strong>{email}</strong>.
-                </div>
-                
-                <label className="block text-slate-300 text-sm font-medium mb-1">Code reçu</label>
-                <input
-                  type="text"
-                  required
-                  maxLength={6}
-                  value={verificationCode}
-                  onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none text-center tracking-[0.5em] text-xl"
-                  placeholder="000000"
-                />
-             </div>
-          )}
+              {/* Simulation Box for Codes */}
+              {demoCode && (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-amber-50 border border-amber-100 rounded-xl p-4"
+                >
+                  <div className="flex items-center gap-2 text-amber-700 font-bold text-xs uppercase mb-2">
+                    <Mail size={12} /> Email Simulator
+                  </div>
+                  <p className="text-slate-600 text-sm mb-2">Code reçu "par email" :</p>
+                  <div className="text-3xl font-mono font-bold text-amber-600 tracking-widest text-center select-all bg-white rounded-lg py-2 border border-amber-100">
+                    {demoCode}
+                  </div>
+                </motion.div>
+              )}
 
-          {/* Email field needed for Login, Signup and Forgot Request */}
-          {view !== "VERIFY" && view !== "FORGOT_CONFIRM" && (
-              <div>
-                <label className="block text-slate-300 text-sm font-medium mb-1">Email</label>
-                <input
+              {/* Fields based on View */}
+              {(view === "LOGIN" || view === "SIGNUP" || view === "FORGOT_REQUEST") && (
+                <GammaInput
                   type="email"
-                  required
+                  placeholder="name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  placeholder="votre@email.com"
-                />
-              </div>
-          )}
-
-          {/* Password field for Login, Signup and Reset Confirm */}
-          {(view === "LOGIN" || view === "SIGNUP" || view === "FORGOT_CONFIRM") && (
-              <div>
-                <label className="block text-slate-300 text-sm font-medium mb-1">
-                   {view === "FORGOT_CONFIRM" ? "Nouveau mot de passe" : "Mot de passe"}
-                </label>
-                <input
-                  type="password"
                   required
-                  minLength={6}
+                  autoFocus
+                />
+              )}
+
+              {(view === "LOGIN" || view === "SIGNUP" || view === "FORGOT_CONFIRM") && (
+                <GammaInput
+                  type="password"
+                  placeholder={view === "FORGOT_CONFIRM" ? "Nouveau mot de passe" : "Mot de passe"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  placeholder="••••••••"
+                  required
                 />
-              </div>
-          )}
+              )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-4 rounded shadow-lg transition-all transform hover:scale-[1.02] flex items-center justify-center gap-2"
-          >
-            {view === "LOGIN" && <><LogIn size={18} /> Se connecter</>}
-            {view === "SIGNUP" && <><Mail size={18} /> S'inscrire avec Email</>}
-            {view === "VERIFY" && <><ShieldCheck size={18} /> Valider le code</>}
-            {view === "FORGOT_REQUEST" && <><KeyRound size={18} /> Envoyer code de reset</>}
-            {view === "FORGOT_CONFIRM" && <><Lock size={18} /> Changer le mot de passe</>}
-          </button>
-        </form>
+              {(view === "VERIFY" || view === "FORGOT_CONFIRM") && (
+                <GammaInput
+                  type="text"
+                  placeholder="Code à 6 chiffres"
+                  value={verificationCode}
+                  onChange={(e) => setVerificationCode(e.target.value)}
+                  className="text-center tracking-[0.5em] font-mono text-lg"
+                  maxLength={6}
+                  required
+                />
+              )}
 
-        {view === "LOGIN" && (
-           <div className="mt-3 text-right">
-              <button onClick={() => resetForm("FORGOT_REQUEST")} className="text-slate-500 hover:text-blue-400 text-xs">
-                 Mot de passe oublié ?
-              </button>
-           </div>
-        )}
-
-        {view !== "VERIFY" && view !== "FORGOT_CONFIRM" && view !== "FORGOT_REQUEST" && (
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => {
-                 resetForm(view === "LOGIN" ? "SIGNUP" : "LOGIN");
-              }}
-              className="text-blue-400 hover:text-blue-300 text-sm underline underline-offset-4"
-            >
-              {view === "LOGIN"
-                ? "Pas encore de compte ? S'inscrire"
-                : "Déjà un compte ? Se connecter"}
-            </button>
-          </div>
-        )}
-        
-        {(view === "VERIFY" || view === "FORGOT_REQUEST" || view === "FORGOT_CONFIRM") && (
-           <div className="mt-6 text-center">
-              <button 
-                 onClick={() => resetForm("LOGIN")} 
-                 className="text-slate-500 hover:text-white text-xs flex items-center justify-center gap-1 mx-auto"
+              <GammaButton
+                type="submit"
+                className="w-full h-12 text-lg"
+                isLoading={isSubmitting}
+                icon={view === "LOGIN" ? <ArrowRight size={18} /> : view === "VERIFY" ? <CheckCircle2 size={18}/> : <ShieldCheck size={18} />}
               >
-                 <ArrowLeft size={12} /> Retour à la connexion
-              </button>
-           </div>
-        )}
+                {view === "LOGIN" && "Se connecter"}
+                {view === "SIGNUP" && "Créer un compte"}
+                {view === "VERIFY" && "Vérifier l'email"}
+                {view === "FORGOT_REQUEST" && "Réinitialiser"}
+                {view === "FORGOT_CONFIRM" && "Confirmer"}
+              </GammaButton>
 
-        <div className="mt-8 pt-4 border-t border-slate-700 text-xs text-slate-500 text-center">
-          Securité : Hashage client SHA-256 + Mock 2FA.
-        </div>
-      </div>
+              {/* Navigation Links */}
+              <div className="flex justify-between items-center text-sm pt-2">
+                {view === "LOGIN" ? (
+                  <>
+                    <button type="button" onClick={() => setView("SIGNUP")} className="text-slate-500 hover:text-indigo-600 transition-colors">Créer un compte</button>
+                    <button type="button" onClick={() => setView("FORGOT_REQUEST")} className="text-slate-400 hover:text-slate-600 transition-colors">Mot de passe oublié ?</button>
+                  </>
+                ) : (
+                  <button type="button" onClick={() => { setView("LOGIN"); setError(null); }} className="text-slate-500 hover:text-indigo-600 transition-colors mx-auto">
+                    Retour à la connexion
+                  </button>
+                )}
+              </div>
+
+            </form>
+          </GammaCard>
+          
+          <div className="mt-8 text-center text-slate-400 text-xs">
+            <p>Sécurisé avec WebCrypto SHA-256</p>
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   );
 };
