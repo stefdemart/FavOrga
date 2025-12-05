@@ -26,7 +26,8 @@ interface AppProps {
 
 const App: React.FC<AppProps> = ({ user, onLogout }) => {
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  const [view, setView] = useState<AppView>(AppView.DASHBOARD);
+  // Démarrer directement sur la vue IMPORT pour inciter à l'action immédiate
+  const [view, setView] = useState<AppView>(AppView.IMPORT);
   const [importSession, setImportSession] = useState<ImportSessionSummary>({ master: null, merges: [] });
   const [isSidebarOpen, setSidebarOpen] = useState(true);
 
@@ -57,13 +58,15 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
     }));
   };
 
+  // Réorganisation du menu : Import en premier
   const navItems = [
+    { id: AppView.IMPORT, icon: Download, label: "Importer" },
+    { sep: true },
     { id: AppView.DASHBOARD, icon: LayoutDashboard, label: "Tableau de bord" },
     { id: AppView.VISUAL, icon: Grid, label: "Galerie Visuelle" },
     { id: AppView.LIST, icon: List, label: "Liste Détaillée" },
     { id: AppView.SMART_COLLECTIONS, icon: Sliders, label: "Collections" },
     { sep: true },
-    { id: AppView.IMPORT, icon: Download, label: "Importer" },
     { id: AppView.LINK_CHECKER, icon: Activity, label: "Diagnostic" },
     { id: AppView.DUPLICATES, icon: CopyPlus, label: "Doublons" },
     { id: AppView.REVIEW, icon: Eye, label: "Mode Review" },
@@ -96,14 +99,14 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
             const active = view === item.id;
             return (
               <button
-                key={item.id}
-                onClick={() => setView(item.id as AppView)}
+                key={item.id || idx}
+                onClick={() => item.id && setView(item.id as AppView)}
                 className={`w-full flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 group relative
                   ${active ? "bg-slate-50 text-indigo-600 font-medium" : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"}
                 `}
               >
                 {active && <motion.div layoutId="activeNav" className="absolute left-0 w-1 h-8 bg-indigo-600 rounded-r-full" />}
-                <Icon size={20} className={active ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />
+                {Icon && <Icon size={20} className={active ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"} />}
                 {isSidebarOpen && <span>{item.label}</span>}
               </button>
             )
@@ -139,7 +142,7 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
                 {view === AppView.IMPORT && (
                   <>
                     <ImportSection onImport={handleImport} />
-                    <div className="mt-12"><AiSorter bookmarks={bookmarks} onUpdateBookmarks={setBookmarks} /></div>
+                    {bookmarks.length > 0 && <div className="mt-12"><AiSorter bookmarks={bookmarks} onUpdateBookmarks={setBookmarks} /></div>}
                   </>
                 )}
                 {view === AppView.VISUAL && <VisualGallery bookmarks={bookmarks} onDelete={handleDelete} onToggleFavorite={handleToggleFavorite} />}

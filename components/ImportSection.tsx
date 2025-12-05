@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { BookmarkSource } from "../services/types";
 import { motion, AnimatePresence } from "framer-motion";
 import { GammaCard, GammaButton, SectionTitle, gradients } from "./ui/GammaDesignSystem";
-import { Upload, FileUp, CheckCircle2, Loader2, Chrome, Compass, AppWindow, Globe, Disc, Shield, Rocket, Map, MoreHorizontal } from "lucide-react";
+import { Upload, FileUp, CheckCircle2, Loader2, Chrome, Compass, AppWindow, Globe, Disc, Shield, Rocket, Map, MoreHorizontal, ArrowRight, RefreshCcw } from "lucide-react";
 
 interface ImportSectionProps {
   onImport: (file: File, source: BookmarkSource, mode: "master" | "merge") => Promise<void>;
@@ -15,24 +15,48 @@ export const ImportSection: React.FC<ImportSectionProps> = ({ onImport }) => {
   const [mode, setMode] = useState<"master" | "merge">("merge");
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
+  const [importStats, setImportStats] = useState<{ count: number; source: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
       setIsProcessing(true);
       setCurrentStep(0);
+      setImportStats(null); // Reset stats
       
-      // Fake progress animation
+      // Fake progress animation for UX
       const interval = setInterval(() => {
         setCurrentStep(prev => Math.min(prev + 1, steps.length - 1));
       }, 600);
 
-      await onImport(e.target.files[0], source, mode);
-      
-      clearInterval(interval);
-      setIsProcessing(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      try {
+        // Capture bookmarks count before/after logic could be handled in parent, 
+        // but here we just wait for the process to finish.
+        // We assume success if no error is thrown.
+        await onImport(file, source, mode);
+        
+        // Simuler un léger délai final pour que l'utilisateur voit "Finalisation"
+        await new Promise(r => setTimeout(r, 800));
+
+        // Note: Le nombre exact n'est pas retourné par onImport dans la signature actuelle,
+        // on simule ici un succès visuel. Dans une V2, on ferait remonter le count.
+        setImportStats({ count: 0, source }); 
+      } catch (err) {
+        console.error(err);
+        alert("Erreur lors de l'import");
+      } finally {
+        clearInterval(interval);
+        setIsProcessing(false);
+        if (fileInputRef.current) fileInputRef.current.value = "";
+      }
     }
+  };
+
+  const resetImport = () => {
+    setImportStats(null);
+    setSource("chrome");
+    setMode("merge");
   };
 
   const sources: { id: BookmarkSource; label: string; icon: any; color: string; bg: string }[] = [
@@ -47,22 +71,57 @@ export const ImportSection: React.FC<ImportSectionProps> = ({ onImport }) => {
     { id: 'other', label: 'Autre', icon: MoreHorizontal, color: 'text-slate-500', bg: 'bg-slate-50' },
   ];
 
+  // Vue Succès
+  if (importStats) {
+    return (
+      <div className="max-w-3xl mx-auto">
+         <motion.div 
+           initial={{ opacity: 0, scale: 0.95 }} 
+           animate={{ opacity: 1, scale: 1 }}
+           className="bg-white rounded-2xl shadow-xl shadow-emerald-500/10 border border-emerald-100 overflow-hidden text-center p-12"
+         >
+            <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-6">
+               <CheckCircle2 className="text-emerald-500 w-10 h-10" />
+            </div>
+            <h2 className="text-3xl font-bold text-slate-800 mb-2">Importation réussie !</h2>
+            <p className="text-slate-500 text-lg mb-8">
+              Vos favoris depuis <span className="font-bold text-slate-700 capitalize">{importStats.source}</span> ont été ajoutés à votre bibliothèque.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+               <GammaButton 
+                 onClick={resetImport}
+                 variant="secondary"
+                 icon={<RefreshCcw size={18} />}
+               >
+                 Importer un autre fichier
+               </GammaButton>
+               {/* Note: L'utilisateur peut naviguer via le menu latéral pour voir les résultats, 
+                   mais ce feedback visuel confirme l'action. */}
+            </div>
+         </motion.div>
+      </div>
+    );
+  }
+
+  // Vue Formulaire Standard
   return (
     <div className="max-w-5xl mx-auto">
       <SectionTitle title="Importer des favoris" subtitle="Ajoutez ou fusionnez vos exports HTML." icon={<Upload size={24} />} />
 
       <GammaCard className="relative overflow-hidden">
+        <AnimatePresence>
         {isProcessing && (
           <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-white/95 z-20 flex flex-col items-center justify-center backdrop-blur-md"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center backdrop-blur-md"
           >
              <div className="w-72 space-y-5">
                 <div className="text-center mb-6">
                    <div className="inline-block p-4 rounded-full bg-indigo-50 mb-3 animate-pulse">
                       <Loader2 className="animate-spin text-indigo-600" size={32} />
                    </div>
-                   <h3 className="font-bold text-slate-800">Importation en cours...</h3>
+                   <h3 className="font-bold text-slate-800">Analyse et Importation...</h3>
                 </div>
                 {steps.map((step, idx) => (
                    <motion.div 
@@ -84,6 +143,7 @@ export const ImportSection: React.FC<ImportSectionProps> = ({ onImport }) => {
              </div>
           </motion.div>
         )}
+        </AnimatePresence>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
            {/* Source Selection (3/5 width) */}
@@ -92,29 +152,29 @@ export const ImportSection: React.FC<ImportSectionProps> = ({ onImport }) => {
                  <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-xs">1</span>
                  Sélectionnez le navigateur source
               </label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                  {sources.map(s => (
                     <motion.button
                       key={s.id}
                       onClick={() => setSource(s.id)}
-                      whileHover={{ scale: 1.02 }}
+                      whileHover={{ scale: 1.02, y: -2 }}
                       whileTap={{ scale: 0.98 }}
                       className={`
-                        relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all duration-200
+                        relative flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all duration-200 h-28
                         ${source === s.id 
                           ? `bg-white border-indigo-500 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500` 
-                          : 'bg-slate-50 border-transparent hover:bg-white hover:border-slate-200 hover:shadow-sm'
+                          : 'bg-slate-50 border-transparent hover:bg-white hover:border-slate-200 hover:shadow-md'
                         }
                       `}
                     >
-                       <div className={`mb-2 p-2 rounded-lg ${source === s.id ? s.bg : 'bg-transparent'}`}>
+                       <div className={`mb-2 p-2.5 rounded-xl transition-colors duration-300 ${source === s.id ? s.bg : 'bg-white shadow-sm'}`}>
                           <s.icon className={source === s.id ? s.color : 'text-slate-400'} size={24} />
                        </div>
-                       <span className={`text-xs font-semibold ${source === s.id ? 'text-slate-800' : 'text-slate-500'}`}>{s.label}</span>
+                       <span className={`text-xs font-bold ${source === s.id ? 'text-slate-800' : 'text-slate-500'}`}>{s.label}</span>
                        
                        {source === s.id && (
                           <motion.div layoutId="check" className="absolute top-2 right-2 text-indigo-500">
-                             <CheckCircle2 size={14} fill="currentColor" className="text-white" />
+                             <CheckCircle2 size={16} fill="currentColor" className="text-white" />
                           </motion.div>
                        )}
                     </motion.button>
