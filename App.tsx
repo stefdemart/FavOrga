@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Bookmark, BookmarkSource, AppView, LinkCheckResult, AuthUser, ImportSessionSummary } from "./services/types";
 import { parseBookmarks } from "./services/bookmarkParser";
 
@@ -24,10 +24,36 @@ interface AppProps {
   onLogout: () => void;
 }
 
+const STORAGE_KEY_PREFIX = "bca_local_bookmarks_";
+
 const App: React.FC<AppProps> = ({ user, onLogout }) => {
-  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
-  // Démarrer directement sur la vue IMPORT
-  const [view, setView] = useState<AppView>(AppView.IMPORT);
+  // Initialisation lazy avec récupération localStorage spécifique à l'utilisateur
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>(() => {
+    try {
+      const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}${user.id}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Persistance automatique à chaque changement de 'bookmarks'
+  useEffect(() => {
+    if (user.id) {
+      localStorage.setItem(`${STORAGE_KEY_PREFIX}${user.id}`, JSON.stringify(bookmarks));
+    }
+  }, [bookmarks, user.id]);
+
+  // Si des favoris existent déjà (chargés du cache), on va au Dashboard par défaut, sinon Import
+  const [view, setView] = useState<AppView>(() => {
+    try {
+       const saved = localStorage.getItem(`${STORAGE_KEY_PREFIX}${user.id}`);
+       return saved && JSON.parse(saved).length > 0 ? AppView.DASHBOARD : AppView.IMPORT;
+    } catch {
+       return AppView.IMPORT;
+    }
+  });
+  
   const [importSession, setImportSession] = useState<ImportSessionSummary>({ master: null, merges: [] });
   const [isSidebarOpen, setSidebarOpen] = useState(true);
 
@@ -72,10 +98,9 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
   ];
 
   return (
-    // Background global Pearl Grey selon charte Gamma
     <div className="flex min-h-screen bg-[#F5F6F8]">
       
-      {/* Sidebar: Blanc Pur, border subtle */}
+      {/* Sidebar */}
       <motion.aside 
         initial={{ width: 280 }}
         animate={{ width: isSidebarOpen ? 280 : 80 }}
@@ -129,7 +154,6 @@ const App: React.FC<AppProps> = ({ user, onLogout }) => {
            </div>
         </header>
 
-        {/* Spacing généreux (Padding 12 = 48px) */}
         <div className="p-12 max-w-[1400px] mx-auto">
            <AnimatePresence mode="wait">
              <motion.div

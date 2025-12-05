@@ -42,8 +42,6 @@ export const AuthGate: React.FC = () => {
           const authUser = await authService.signIn(email, password);
           setUser(authUser);
         } catch (err: any) {
-          // Si compte non vérifié, on propose de vérifier (via le catch général pour l'instant, 
-          // mais on pourrait rediriger automatiquement si l'erreur est spécifique)
           throw err;
         }
       } else if (view === "SIGNUP") {
@@ -99,15 +97,16 @@ export const AuthGate: React.FC = () => {
     setDemoCode(null);
   };
 
-  if (loading) return null; // Or a nice full-screen loader
+  if (loading) return null;
 
   if (user) {
-    return <App user={user} onLogout={handleLogout} />;
+    // Utilisation de user.id comme key pour forcer le re-mount complet de App
+    // et garantir que les hooks de persistance (useEffect) chargent les bonnes données.
+    return <App key={user.id} user={user} onLogout={handleLogout} />;
   }
 
   return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6 overflow-hidden relative">
-      {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-200/30 rounded-full blur-3xl" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-violet-200/30 rounded-full blur-3xl" />
@@ -133,7 +132,6 @@ export const AuthGate: React.FC = () => {
           <GammaCard className="backdrop-blur-xl bg-white/90">
             <form onSubmit={handleAuthAction} className="space-y-5">
               
-              {/* Error Message */}
               <AnimatePresence>
                 {error && (
                   <motion.div
@@ -147,7 +145,6 @@ export const AuthGate: React.FC = () => {
                 )}
               </AnimatePresence>
 
-              {/* Simulation Box for Codes */}
               {demoCode && (
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.9 }}
@@ -164,7 +161,6 @@ export const AuthGate: React.FC = () => {
                 </motion.div>
               )}
 
-              {/* Fields based on View */}
               {(view === "LOGIN" || view === "SIGNUP" || view === "FORGOT_REQUEST") && (
                 <div className="relative">
                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
@@ -235,7 +231,6 @@ export const AuthGate: React.FC = () => {
                 {view === "FORGOT_CONFIRM" && "Confirmer"}
               </GammaButton>
 
-              {/* Navigation Links */}
               <div className="flex justify-between items-center text-sm pt-2">
                 {view === "LOGIN" ? (
                   <>

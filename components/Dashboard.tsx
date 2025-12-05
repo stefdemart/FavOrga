@@ -3,7 +3,7 @@ import { Bookmark, CategoryStats, ImportSessionSummary } from "../services/types
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis } from "recharts";
 import { motion } from "framer-motion";
 import { GammaCard, SectionTitle, GammaBadge, gradients, fadeIn, staggerContainer } from "./ui/GammaDesignSystem";
-import { Chrome, Compass, Globe, AppWindow, Database, Layers, ArrowRight, Tag, Activity, Star } from "lucide-react";
+import { Chrome, Compass, Globe, AppWindow, Database, Layers, ArrowRight, Tag, Activity, Star, Info } from "lucide-react";
 
 interface DashboardProps {
   bookmarks: Bookmark[];
@@ -26,8 +26,28 @@ const BrowserIcon = ({ source, size = 20 }: { source: string, size?: number }) =
 };
 
 export const Dashboard: React.FC<DashboardProps> = ({ bookmarks, importSession }) => {
-  // --- Stats Calculations ---
   const total = bookmarks.length;
+  
+  // --- Empty State ---
+  if (total === 0) {
+    return (
+      <motion.div variants={fadeIn} initial="hidden" animate="visible" className="flex flex-col items-center justify-center py-20 text-center">
+         <div className="w-24 h-24 bg-indigo-50 rounded-full flex items-center justify-center mb-6 animate-pulse">
+            <Info className="text-indigo-500 w-12 h-12" />
+         </div>
+         <h2 className="text-2xl font-bold text-slate-800 mb-2">Bienvenue sur votre Dashboard</h2>
+         <p className="text-slate-500 max-w-md mb-8">
+           Il semble que vous n'ayez pas encore importé de favoris. Commencez par importer un fichier HTML pour voir vos statistiques.
+         </p>
+         {/* L'utilisateur utilisera le menu Importer, pas de bouton ici pour éviter conflit de nav */}
+         <div className="text-sm text-indigo-500 font-bold bg-indigo-50 px-4 py-2 rounded-lg">
+            👈 Cliquez sur "Importer" dans le menu
+         </div>
+      </motion.div>
+    );
+  }
+
+  // --- Stats Calculations ---
   const favorites = bookmarks.filter(b => b.isFavorite).length;
   const uncategorized = bookmarks.filter(b => !b.category).length;
   

@@ -26,18 +26,18 @@ export const categorizeBookmarks = async (bookmarks: Bookmark[]): Promise<Bookma
   const model = "gemini-2.5-flash"; 
 
   // Configuration anti-429 (Rate Limiting)
-  // Le plan gratuit est souvent limité à ~15 RPM (Requêtes par minute).
-  // Batch size petit + délai important entre les appels.
-  const batchSize = 3;
+  // Le plan gratuit est très limité (15 RPM max, parfois moins en pic).
+  // On garde un batch petit et on augmente les délais.
+  const batchSize = 3; 
   const categorizedBookmarks = [...bookmarks];
 
   for (let i = 0; i < bookmarks.length; i += batchSize) {
     const batch = bookmarks.slice(i, i + batchSize);
 
     // Pause préventive entre les lots
-    // 4000ms garantit qu'on ne dépasse pas ~15 RPM même si la réponse est rapide.
+    // 5000ms = 12 requêtes / minute max théorique.
     if (i > 0) {
-        await delay(4000); 
+        await delay(5000); 
     }
 
     const prompt = `
@@ -95,28 +95,28 @@ export const categorizeBookmarks = async (bookmarks: Bookmark[]): Promise<Bookma
         console.warn(`Erreur batch ${i} (tentative ${retryCount}/${maxRetries})`, e);
 
         if (isQuotaError) {
-          if (retryCount < maxRetries) {
-            // Backoff exponentiel : 10s, 20s...
-            const waitTime = 10000 * retryCount;
-            console.warn(`Quota atteint (429). Pause de ${waitTime/1000}s avant retry...`);
-            await delay(waitTime);
-          } else {
-            console.error("Abandon du batch après plusieurs échecs de quota.");
-            // Si on échoue trop souvent sur le quota, on arrête tout le processus pour ne pas bloquer l'UI indéfiniment
-            return finalize(categorizedBookmarks);
-          }
+          // Backoff agressif pour 429 : 15s, 30s, 45s
+          const waitTime = 15000 * retryCount;
+          console.warn(`Quota atteint (429). Pause de ${waitTime/1000}s avant retry...`);
+          await delay(waitTime);
         } else {
-          // Autres erreurs (réseau, parsing) : petite pause et retry
+          // Autres erreurs : petite pause
           if (retryCount < maxRetries) await delay(2000);
         }
       }
+    }
+    
+    // FAIL-SOFT : Si le batch échoue totalement après 3 essais, on log l'erreur mais on CONTINUE.
+    // Les favoris de ce batch resteront simplement non classés.
+    if (!success) {
+        console.error(`Batch ${i} abandonné après ${maxRetries} tentatives. Les favoris de ce lot resteront non classés.`);
     }
   }
 
   return finalize(categorizedBookmarks);
 };
 
-// Helper pour finaliser le tableau (mettre _A VOIR par défaut)
+// Helper pour finaliser le tableau (mettre _A VOIR par défaut si pas de catégorie)
 const finalize = (bookmarks: Bookmark[]) => {
   return bookmarks.map(b => {
     if (!b.category) {

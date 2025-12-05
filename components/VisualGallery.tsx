@@ -3,7 +3,7 @@ import { Bookmark } from "../services/types";
 import { getFaviconUrl, getThumbnailUrl } from "../services/thumbnailService";
 import { GammaCard, GammaInput, GammaPill, getCategoryColor, staggerContainer, fadeIn } from "./ui/GammaDesignSystem";
 import { motion, AnimatePresence } from "framer-motion";
-import { Star, ExternalLink, Trash2, Search, Filter, AlertTriangle, XCircle, ImageOff, User } from "lucide-react";
+import { Star, ExternalLink, Trash2, Search, Filter, AlertTriangle, XCircle, ImageOff, User, DownloadCloud } from "lucide-react";
 
 interface VisualGalleryProps {
   bookmarks: Bookmark[];
@@ -65,6 +65,19 @@ const SmartThumbnail: React.FC<{ url: string; title: string }> = ({ url, title }
 export const VisualGallery: React.FC<VisualGalleryProps> = ({ bookmarks, onToggleFavorite, onDelete }) => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+
+  // Empty State Global
+  if (bookmarks.length === 0) {
+     return (
+        <div className="flex flex-col items-center justify-center h-[50vh] text-slate-400">
+           <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
+              <DownloadCloud size={32} className="opacity-40" />
+           </div>
+           <p className="text-xl font-medium text-slate-600">Votre galerie est vide</p>
+           <p className="text-sm mt-2">Importez vos favoris pour les voir apparaître ici.</p>
+        </div>
+     );
+  }
 
   // Extraction unique des catégories
   const categories = useMemo(() => {
